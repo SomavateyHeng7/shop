@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f3ea;
+  --foreground: #11151f;
+  --sand-100: #f6f3ea;
+  --sand-200: #e8dfcf;
+  --sand-300: #d8c8ab;
+  --ink-900: #11151f;
+  --accent-100: #d7efe5;
+  --accent-400: #2ea56f;
+  --accent-500: #218c5d;
+  --accent-600: #15754d;
+  --accent-700: #0e613f;
+  --accent-800: #0a4830;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --color-sand-100: var(--sand-100);
+  --color-sand-200: var(--sand-200);
+  --color-sand-300: var(--sand-300);
+  --color-ink-900: var(--ink-900);
+  --color-accent-100: var(--accent-100);
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-accent-700: var(--accent-700);
+  --color-accent-800: var(--accent-800);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), "Manrope", sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), "Fraunces", serif;
+}
