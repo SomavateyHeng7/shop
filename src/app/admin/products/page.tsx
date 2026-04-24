@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ProductTable } from "@/components/admin/product-table";
-import { productCardSelect } from "@/lib/catalog";
-import { prisma } from "@/lib/prisma";
+import { mockStore } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
 
@@ -17,20 +16,7 @@ export default async function AdminProductsPage({
   const resolved = await searchParams;
   const search = resolved.search?.trim();
 
-  const products = await prisma.product.findMany({
-    where: {
-      ...(search
-        ? {
-            name: {
-              contains: search,
-              mode: "insensitive",
-            },
-          }
-        : {}),
-    },
-    select: productCardSelect,
-    orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
-  });
+  const products = mockStore.products.findMany({ search, includeInactive: true });
 
   return (
     <div className="space-y-4">

@@ -11,14 +11,16 @@ export async function proxy(request: NextRequest) {
     request.cookies.has("__Secure-authjs.session-token");
 
   const isAdminRoute = pathname.startsWith("/admin");
-  const isLoginPage = pathname === "/admin/login";
+  const isSuperadminRoute = pathname.startsWith("/superadmin");
+  const isLoginPage = pathname === "/auth/login";
   const isApiAdminRoute = pathname.startsWith("/api/admin");
+  const isApiSuperadminRoute = pathname.startsWith("/api/superadmin");
 
-  if (isAdminRoute && !isLoginPage && !hasSession) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+  if ((isAdminRoute || isSuperadminRoute) && !isLoginPage && !hasSession) {
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  if (isApiAdminRoute && !hasSession) {
+  if ((isApiAdminRoute || isApiSuperadminRoute) && !hasSession) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -30,5 +32,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/admin/:path*", "/superadmin/:path*", "/auth/login", "/api/admin/:path*", "/api/superadmin/:path*"],
 };

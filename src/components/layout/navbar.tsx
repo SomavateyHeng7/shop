@@ -16,21 +16,38 @@ export async function Navbar({ searchValue = "" }: Props) {
         </Link>
 
         <nav className="hidden items-center gap-5 text-sm font-medium text-ink-700 md:flex">
+
           <Link className="transition-colors hover:text-accent-700" href="/products">
             All Products
           </Link>
-          {categories.slice(0, 4).map((category) => (
-            <Link
-              key={category.id}
-              className="transition-colors hover:text-accent-700"
-              href={`/categories/${category.slug}`}
-            >
-              {category.name}
-            </Link>
-          ))}
-          <Link className="transition-colors hover:text-accent-700" href="/admin">
-            Admin
-          </Link>
+
+          <details className="group relative">
+            <summary className="cursor-pointer list-none transition-colors hover:text-accent-700">
+              Categories
+            </summary>
+            <div className="absolute left-0 top-8 w-64 rounded-xl border border-sand-200 bg-white p-3 text-sm shadow-xl">
+              <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    className="block rounded-md px-2 py-1.5 text-ink-700 hover:bg-sand-100 hover:text-accent-800"
+                    href={`/categories/${category.slug}`}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-2 border-t border-sand-200 pt-2">
+                <Link
+                  className="block rounded-md px-2 py-1.5 font-semibold text-accent-700 hover:bg-sand-100 hover:text-accent-800"
+                  href="/products"
+                >
+                  View all categories
+                </Link>
+              </div>
+            </div>
+          </details>
+
         </nav>
 
         <form action="/products" className="hidden w-72 items-center gap-2 md:flex">
@@ -48,6 +65,61 @@ export async function Navbar({ searchValue = "" }: Props) {
             Search
           </button>
         </form>
+        <Link
+            className="rounded-full border border-accent-600 px-4 py-2 text-sm font-semibold text-accent-700 transition hover:bg-accent-50"
+            href="/auth/login"
+          >
+            Login
+          </Link>
+        
+
+        <details className="relative md:hidden">
+          <summary className="cursor-pointer list-none rounded-full border border-sand-300 px-4 py-2 text-sm font-semibold text-ink-900">
+            Menu
+          </summary>
+
+          <div className="absolute right-0 top-12 z-30 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-sand-200 bg-white p-4 shadow-xl">
+            <form action="/products" className="flex items-center gap-2">
+              <input
+                type="search"
+                name="search"
+                defaultValue={searchValue}
+                placeholder="Search products"
+                className="w-full rounded-full border border-sand-300 bg-sand-50 px-4 py-2 text-sm text-ink-900 outline-none ring-accent-500 transition focus:ring-2"
+              />
+              <button
+                type="submit"
+                className="rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-700"
+              >
+                Search
+              </button>
+            </form>
+
+            <nav className="mt-4 space-y-1 text-sm font-medium">
+              <Link
+                className="block rounded-lg px-3 py-2 text-ink-800 transition hover:bg-sand-100"
+                href="/products"
+              >
+                All Products
+              </Link>
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  className="block rounded-lg px-3 py-2 text-ink-800 transition hover:bg-sand-100"
+                  href={`/categories/${category.slug}`}
+                >
+                  {category.name}
+                </Link>
+              ))}
+              <Link
+                className="block rounded-lg px-3 py-2 font-semibold text-accent-700 transition hover:bg-sand-100"
+                href="/products"
+              >
+                View all categories
+              </Link>
+            </nav>
+          </div>
+        </details>
       </div>
     </header>
   );

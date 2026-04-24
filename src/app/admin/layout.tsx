@@ -15,7 +15,7 @@ export default async function AdminLayout({
 
   const session = await auth();
 
-  if (!session && !isLoginRoute) {
+  if (!session) {
     redirect("/admin/login");
   }
 
@@ -33,7 +33,7 @@ export default async function AdminLayout({
           <form
             action={async () => {
               "use server";
-              await signOut({ redirectTo: "/admin/login" });
+              await signOut({ redirectTo: "/auth/login" });
             }}
           >
             <button

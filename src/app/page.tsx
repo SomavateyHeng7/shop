@@ -29,12 +29,6 @@ export default async function Home() {
             >
               Browse Catalog
             </Link>
-            <Link
-              href="/admin"
-              className="rounded-full border border-white/50 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              Open Admin Dashboard
-            </Link>
           </div>
         </div>
       </section>

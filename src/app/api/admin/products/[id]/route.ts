@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { mockStore } from "@/lib/mock-data";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -6,7 +6,7 @@ const updateSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   price: z.number().positive().optional(),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z.string().optional().or(z.literal("")),
   categoryId: z.string().optional().nullable(),
   stock: z.number().int().min(0).optional(),
   lowStockAt: z.number().int().min(0).optional(),
@@ -18,10 +18,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const product = await prisma.product.findUnique({
-    where: { id },
-    include: { category: true, stockLogs: { orderBy: { createdAt: "desc" }, take: 10 } },
-  });
+  const product = mockStore.products.findById(id);
   if (!product) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json(product);
 }
@@ -30,6 +27,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!mockStore.system.getSettings().adminWritesEnabled) {
+    return Response.json({ error: "Admin writes are currently disabled by superadmin." }, { status: 423 });
+  }
+
   const { id } = await params;
   const body = await request.json();
   const parsed = updateSchema.safeParse(body);
@@ -38,16 +39,13 @@ export async function PUT(
   }
 
   const { imageUrl, categoryId, ...rest } = parsed.data;
-
-  const product = await prisma.product.update({
-    where: { id },
-    data: {
-      ...rest,
-      ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
-      ...(categoryId !== undefined ? { categoryId: categoryId || null } : {}),
-    },
+  const product = mockStore.products.update(id, {
+    ...rest,
+    ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
+    ...(categoryId !== undefined ? { categoryId: categoryId || null } : {}),
   });
 
+  if (!product) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json(product);
 }
 
@@ -55,7 +53,11 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!mockStore.system.getSettings().adminWritesEnabled) {
+    return Response.json({ error: "Admin writes are currently disabled by superadmin." }, { status: 423 });
+  }
+
   const { id } = await params;
-  await prisma.product.update({ where: { id }, data: { isActive: false } });
+  mockStore.products.update(id, { isActive: false });
   return Response.json({ success: true });
 }

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { ProductGrid } from "@/components/product-grid";
 import { StorefrontShell } from "@/components/layout/storefront-shell";
+import { mockStore } from "@/lib/mock-data";
 import { getProducts } from "@/lib/catalog";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
 
-  const category = await prisma.category.findUnique({ where: { slug } });
+  const category = mockStore.categories.findBySlug(slug);
   if (!category) {
     notFound();
   }

@@ -1,10 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { mockStore } from "@/lib/mock-data";
 
 export async function GET() {
-  const products = await prisma.product.findMany({
-    include: { category: { select: { name: true } } },
-    orderBy: { name: "asc" },
-  });
+  const products = mockStore.products.findMany({ includeInactive: true });
 
   const header = "ID,Name,Category,Price,Stock,Low Stock At,Active,Created At\n";
   const rows = products

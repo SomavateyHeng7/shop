@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
-import { writeFile } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -17,7 +21,14 @@ export async function POST(request: NextRequest) {
   const filepath = join(uploadDir, filename);
 
   const bytes = await file.arrayBuffer();
-  await writeFile(filepath, Buffer.from(bytes));
+  const buffer = Buffer.from(bytes);
+  const base64 = buffer.toString("base64");
+  const dataUri = `data:${file.type};base64,${base64}`;
 
-  return Response.json({ url: `/uploads/${filename}` });
+  const result = await cloudinary.uploader.upload(dataUri, {
+    folder: "product-catalog",
+    resource_type: "image",
+  });
+
+  return Response.json({ url: result.secure_url });
 }
