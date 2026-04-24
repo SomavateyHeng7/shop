@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ImpersonateAdminButton } from "@/components/superadmin/impersonate-admin-button";
 import { mockStore } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
@@ -111,7 +112,6 @@ export default async function SuperadminOverviewPage() {
               { href: "/superadmin/admins", label: "Manage Admin Accounts", desc: "Create, suspend, and role-assign" },
               { href: "/superadmin/system", label: "System Policies", desc: "Toggles & global thresholds" },
               { href: "/superadmin/logs", label: "Audit Timeline", desc: "Review all platform events" },
-              { href: "/admin", label: "Admin Dashboard", desc: "Switch to admin view", external: true },
             ].map((item) => (
               <Link
                 key={item.href}
@@ -122,6 +122,10 @@ export default async function SuperadminOverviewPage() {
                 <p className="mt-0.5 text-xs text-slate-500 transition group-hover:text-slate-400">{item.desc}</p>
               </Link>
             ))}
+            <ImpersonateAdminButton className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100" />
+            <div className="-mt-2 px-1 text-xs text-amber-700 sm:col-span-2">
+              Enter the admin dashboard in impersonation mode.
+            </div>
           </div>
         </article>
 

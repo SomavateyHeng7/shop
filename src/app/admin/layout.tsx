@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { AdminImpersonationGate } from "@/components/admin/admin-impersonation-gate";
+import { StopImpersonationButton } from "@/components/admin/stop-impersonation-button";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { auth, signOut } from "@/lib/auth";
 
@@ -16,7 +18,7 @@ export default async function AdminLayout({
   const session = await auth();
 
   if (!session) {
-    redirect("/admin/login");
+    redirect("/auth/login");
   }
 
   if (isLoginRoute) {
@@ -30,25 +32,30 @@ export default async function AdminLayout({
           <Link href="/admin" className="text-xl font-semibold text-slate-900">
             Admin Dashboard
           </Link>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/auth/login" });
-            }}
-          >
-            <button
-              type="submit"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          <div className="flex items-center gap-2">
+            {session.user.role === "superadmin" && <StopImpersonationButton />}
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/auth/login" });
+              }}
             >
-              Sign out
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
         <AdminSidebar />
-        <div>{children}</div>
+        <AdminImpersonationGate role={session.user.role}>
+          <div>{children}</div>
+        </AdminImpersonationGate>
       </div>
     </div>
   );

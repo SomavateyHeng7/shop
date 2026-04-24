@@ -15,11 +15,6 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const ext = file.name.split(".").pop() ?? "bin";
-  const filename = `${randomUUID()}.${ext}`;
-  const uploadDir = join(process.cwd(), "public", "uploads");
-  const filepath = join(uploadDir, filename);
-
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
   const base64 = buffer.toString("base64");
