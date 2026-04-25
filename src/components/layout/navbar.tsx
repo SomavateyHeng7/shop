@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getAllCategories } from "@/lib/catalog";
 
@@ -11,8 +12,8 @@ export async function Navbar({ searchValue = "" }: Props) {
   return (
     <header className="sticky top-0 z-20 border-b border-sand-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="font-display text-2xl tracking-tight text-ink-900">
-          PIC Catalog
+        <Link href="/" className="shrink-0">
+          <Image src="/st-shop.png" alt="ST Shop" width={120} height={40} style={{ height: 40, width: "auto" }} className="object-contain" priority />
         </Link>
 
         <nav className="hidden items-center gap-5 text-sm font-medium text-ink-700 md:flex">
@@ -28,8 +29,11 @@ export async function Navbar({ searchValue = "" }: Props) {
               {category.name}
             </Link>
           ))}
-          <Link className="transition-colors hover:text-accent-700" href="/admin">
-            Admin
+          <Link
+            className="rounded-lg border border-sand-300 px-3 py-1.5 text-sm font-medium text-ink-700 transition hover:bg-sand-100"
+            href="/admin/login"
+          >
+            Login
           </Link>
         </nav>
 
