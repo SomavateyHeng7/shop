@@ -10,7 +10,7 @@ const schema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const body = await request.json();
@@ -32,32 +32,40 @@ export async function PATCH(
     return Response.json({ error: "Stock cannot go below 0" }, { status: 400 });
   }
 
-  // Weighted average cost — only recalculate when restocking with a known cost
-  const ops: Parameters<typeof prisma.$transaction>[0] = [
-    prisma.product.update({ where: { id }, data: { stock: newStock } }),
-    prisma.stockLog.create({
-      data: { productId: id, change, note: note ?? null, unitCost: unitCost ?? null },
-    }),
-  ];
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedProduct = await tx.product.update({
+      where: { id },
+      data: { stock: newStock },
+    });
 
-  if (change > 0 && unitCost !== undefined) {
-    const currentStock = product.stock;
-    const currentAvg = Number(product.financeData?.boughtPrice ?? 0);
-    // (existing units × old avg) + (new units × new cost) / total units
-    const weightedAvg =
-      currentStock === 0
-        ? unitCost
-        : (currentStock * currentAvg + change * unitCost) / newStock;
+    await tx.stockLog.create({
+      data: {
+        productId: id,
+        change,
+        note: note ?? null,
+        unitCost: unitCost ?? null,
+      },
+    });
 
-    ops.push(
-      prisma.productFinance.upsert({
+    // Weighted average cost — only recalculate when restocking with a known cost.
+    if (change > 0 && unitCost !== undefined) {
+      const currentStock = product.stock;
+      const currentAvg = Number(product.financeData?.boughtPrice ?? 0);
+      // (existing units × old avg) + (new units × new cost) / total units
+      const weightedAvg =
+        currentStock === 0
+          ? unitCost
+          : (currentStock * currentAvg + change * unitCost) / newStock;
+
+      await tx.productFinance.upsert({
         where: { productId: id },
         create: { productId: id, boughtPrice: weightedAvg },
         update: { boughtPrice: weightedAvg },
-      })
-    );
-  }
+      });
+    }
 
-  const [updated] = await prisma.$transaction(ops);
+    return updatedProduct;
+  });
+
   return Response.json(updated);
 }
