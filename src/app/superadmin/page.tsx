@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ImpersonateAdminButton } from "@/components/superadmin/impersonate-admin-button";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -12,18 +12,27 @@ const ACTION_STYLES: Record<string, string> = {
 };
 
 export default async function SuperadminOverviewPage() {
-  const products = mockStore.products.findMany({ includeInactive: true });
-  const categories = mockStore.categories.findMany();
-  const settings = mockStore.system.getSettings();
-  const activeAdmins = mockStore.adminUsers.activeCount();
-  const totalAdmins = mockStore.adminUsers.findMany().length;
-  const superadmins = mockStore.adminUsers.countByRole("superadmin");
-  const lowStockItems = products.filter((item) => item.stock <= settings.globalLowStockThreshold).length;
+  const [rawProducts, totalCategories, adminUsers, settings, auditLogs] = await Promise.all([
+    prisma.product.findMany({ select: { isActive: true, price: true, stock: true, lowStockAt: true } }),
+    prisma.category.count(),
+    prisma.adminUser.findMany({ select: { role: true, isActive: true } }),
+    prisma.systemSettings.findUnique({ where: { id: "singleton" } }),
+    prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
+  ]);
+
+  const products = rawProducts.map((p) => ({ ...p, price: Number(p.price) }));
+  const categories = { length: totalCategories };
+  const threshold = settings?.globalLowStockThreshold ?? 5;
+  const activeAdmins = adminUsers.filter((u) => u.isActive).length;
+  const totalAdmins = adminUsers.length;
+  const superadmins = adminUsers.filter((u) => u.role === "superadmin").length;
+  const lowStockItems = products.filter((item) => item.stock <= threshold).length;
   const inactiveProducts = products.filter((item) => !item.isActive).length;
   const totalStockValue = products.reduce((sum, product) => sum + product.stock * product.price, 0);
-  const audit = mockStore.audit.list(6);
+  const audit = auditLogs;
+  const settingsDisplay = settings ?? { maintenanceMode: false, catalogPublic: true, adminWritesEnabled: true };
 
-  const isOperational = !settings.maintenanceMode;
+  const isOperational = !settingsDisplay.maintenanceMode;
 
   return (
     <div className="space-y-6">
@@ -99,7 +108,7 @@ export default async function SuperadminOverviewPage() {
             {isOperational ? "Operational" : "Maintenance"}
           </p>
           <p className={`mt-1 text-xs ${isOperational ? "text-slate-500" : "text-red-600"}`}>
-            Catalog {settings.catalogPublic ? "public" : "private"} · writes {settings.adminWritesEnabled ? "on" : "off"}
+            Catalog {settingsDisplay.catalogPublic ? "public" : "private"} · writes {settingsDisplay.adminWritesEnabled ? "on" : "off"}
           </p>
         </article>
       </section>

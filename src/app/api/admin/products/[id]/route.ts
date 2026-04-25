@@ -1,4 +1,4 @@
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -13,21 +13,32 @@ const updateSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+async function isWritesEnabled() {
+  const s = await prisma.systemSettings.findUnique({ where: { id: "singleton" } });
+  return s?.adminWritesEnabled ?? true;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const product = mockStore.products.findById(id);
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: {
+      category: { select: { name: true, slug: true } },
+      stockLogs: { orderBy: { createdAt: "desc" }, take: 10 },
+    },
+  });
   if (!product) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json(product);
+  return Response.json({ ...product, price: Number(product.price) });
 }
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!mockStore.system.getSettings().adminWritesEnabled) {
+  if (!(await isWritesEnabled())) {
     return Response.json({ error: "Admin writes are currently disabled by superadmin." }, { status: 423 });
   }
 
@@ -39,25 +50,32 @@ export async function PUT(
   }
 
   const { imageUrl, categoryId, ...rest } = parsed.data;
-  const product = mockStore.products.update(id, {
-    ...rest,
-    ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
-    ...(categoryId !== undefined ? { categoryId: categoryId || null } : {}),
-  });
 
-  if (!product) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json(product);
+  try {
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
+        ...(categoryId !== undefined ? { categoryId: categoryId || null } : {}),
+      },
+      include: { category: { select: { name: true, slug: true } } },
+    });
+    return Response.json({ ...product, price: Number(product.price) });
+  } catch {
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
 }
 
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!mockStore.system.getSettings().adminWritesEnabled) {
+  if (!(await isWritesEnabled())) {
     return Response.json({ error: "Admin writes are currently disabled by superadmin." }, { status: 423 });
   }
 
   const { id } = await params;
-  mockStore.products.update(id, { isActive: false });
+  await prisma.product.update({ where: { id }, data: { isActive: false } });
   return Response.json({ success: true });
 }

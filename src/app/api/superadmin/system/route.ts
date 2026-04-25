@@ -1,4 +1,4 @@
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -17,7 +17,12 @@ export async function GET() {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  return Response.json(mockStore.system.getSettings());
+  const settings = await prisma.systemSettings.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton" },
+  });
+  return Response.json(settings);
 }
 
 export async function PATCH(request: NextRequest) {
@@ -32,12 +37,19 @@ export async function PATCH(request: NextRequest) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const updated = mockStore.system.updateSettings(parsed.data);
-  mockStore.audit.create({
-    actor: "Superadmin API",
-    action: "Update",
-    target: "System Settings",
-    details: "System settings updated via API",
+  const updated = await prisma.systemSettings.upsert({
+    where: { id: "singleton" },
+    update: parsed.data,
+    create: { id: "singleton", ...parsed.data },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actor: "Superadmin API",
+      action: "Update",
+      target: "System Settings",
+      details: "System settings updated via API",
+    },
   });
 
   return Response.json(updated);

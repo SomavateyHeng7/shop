@@ -1,10 +1,11 @@
 import { ProductForm } from "@/components/admin/product-form";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewProductPage() {
-  const categories = mockStore.categories.findMany().map((c) => ({ id: c.id, name: c.name }));
+  const rawCategories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  const categories = rawCategories.map((c) => ({ id: c.id, name: c.name }));
 
   return (
     <div className="space-y-4">

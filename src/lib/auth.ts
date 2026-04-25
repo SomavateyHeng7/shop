@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -8,20 +10,10 @@ const loginSchema = z.object({
   portal: z.enum(["admin", "superadmin"]).default("admin"),
 });
 
-const MOCK_USERS = [
-  { id: "mock-admin-1", email: "admin@example.com", password: "admin", name: "Store Admin", role: "admin" as const },
-  {
-    id: "mock-superadmin-1",
-    email: "superadmin@example.com",
-    password: "superadmin",
-    name: "System Owner",
-    role: "superadmin" as const,
-  },
-];
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET ?? "mock-frontend-testing-secret",
+  secret: process.env.AUTH_SECRET,
   session: { strategy: "jwt" },
+  trustHost: true,
   pages: {
     signIn: "/auth/login",
   },
@@ -31,20 +23,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const matchedUser = MOCK_USERS.find(
-          (entry) =>
-            entry.email === parsed.data.email &&
-            entry.password === parsed.data.password &&
-            entry.role === parsed.data.portal
-        );
+        const { email, password, portal } = parsed.data;
 
-        if (!matchedUser) return null;
+        const user = await prisma.adminUser.findUnique({ where: { email } });
+        if (!user || !user.isActive) return null;
+        if (user.role !== portal) return null;
+
+        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!valid) return null;
+
+        await prisma.adminUser.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
 
         return {
-          id: matchedUser.id,
-          email: matchedUser.email,
-          name: matchedUser.name,
-          role: matchedUser.role,
+          id: user.id,
+          email: user.email,
+          name: user.name ?? "",
+          role: user.role as "admin" | "superadmin",
         };
       },
     }),

@@ -1,4 +1,4 @@
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -11,7 +11,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!mockStore.system.getSettings().adminWritesEnabled) {
+  const s = await prisma.systemSettings.findUnique({ where: { id: "singleton" } });
+  if (!(s?.adminWritesEnabled ?? true)) {
     return Response.json({ error: "Admin writes are currently disabled by superadmin." }, { status: 423 });
   }
 
@@ -22,12 +23,15 @@ export async function PATCH(
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const current = mockStore.products.findById(id);
+  const current = await prisma.product.findUnique({ where: { id } });
   if (!current) return Response.json({ error: "Not found" }, { status: 404 });
 
   const change = parsed.data.stock - current.stock;
-  const product = mockStore.products.update(id, { stock: parsed.data.stock });
-  mockStore.stockLogs.create(id, change, parsed.data.note);
 
-  return Response.json(product);
+  const [product] = await prisma.$transaction([
+    prisma.product.update({ where: { id }, data: { stock: parsed.data.stock } }),
+    prisma.stockLog.create({ data: { productId: id, change, note: parsed.data.note } }),
+  ]);
+
+  return Response.json({ ...product, price: Number(product.price) });
 }

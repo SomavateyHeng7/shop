@@ -1,5 +1,5 @@
 import { addAuditNoteAction } from "@/app/superadmin/actions";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ function getActionConfig(action: string) {
 }
 
 export default async function SuperadminLogsPage() {
-  const logs = mockStore.audit.list(100);
+  const logs = await prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
 
   return (
     <div className="space-y-6">

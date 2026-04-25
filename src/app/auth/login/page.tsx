@@ -26,11 +26,6 @@ export default async function AdminLoginPage({
           Sign in as admin or superadmin to manage operations and system controls.
         </p>
 
-        <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-          <strong>Demo credentials:</strong> admin@example.com / admin, superadmin@example.com /
-          superadmin
-        </div>
-
         <form
           className="mt-6 space-y-4"
           action={async (formData) => {
@@ -75,7 +70,7 @@ export default async function AdminLoginPage({
               name="email"
               type="email"
               required
-              defaultValue="admin@example.com"
+              placeholder="Enter your email"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
@@ -89,7 +84,7 @@ export default async function AdminLoginPage({
               name="password"
               type="password"
               required
-              defaultValue="admin"
+              placeholder="Enter your password"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
           </div>

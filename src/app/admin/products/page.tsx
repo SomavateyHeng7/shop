@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ProductTable } from "@/components/admin/product-table";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,19 @@ export default async function AdminProductsPage({
   const resolved = await searchParams;
   const search = resolved.search?.trim();
 
-  const products = mockStore.products.findMany({ search, includeInactive: true });
+  const rawProducts = await prisma.product.findMany({
+    where: search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {},
+    include: { category: { select: { name: true, slug: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  const products = rawProducts.map((p) => ({ ...p, price: Number(p.price) }));
 
   return (
     <div className="space-y-4">

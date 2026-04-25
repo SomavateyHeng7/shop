@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StorefrontShell } from "@/components/layout/storefront-shell";
 import { StockBadge } from "@/components/stock-badge";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,11 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = mockStore.products.findBySlugOrId(slug, true);
+  const raw = await prisma.product.findFirst({
+    where: { OR: [{ slug }, { id: slug }], isActive: true },
+    include: { category: { select: { name: true, slug: true } } },
+  });
+  const product = raw ? { ...raw, price: Number(raw.price) } : null;
 
   if (!product) {
     notFound();

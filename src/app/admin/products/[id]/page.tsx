@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ProductForm } from "@/components/admin/product-form";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +11,18 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
 
-  const product = mockStore.products.findById(id);
-  if (!product) notFound();
+  const rawProduct = await prisma.product.findUnique({
+    where: { id },
+    include: {
+      category: { select: { name: true, slug: true } },
+      stockLogs: { orderBy: { createdAt: "desc" }, take: 10 },
+    },
+  });
+  if (!rawProduct) notFound();
+  const product = { ...rawProduct, price: Number(rawProduct.price) };
 
-  const categories = mockStore.categories.findMany().map((c) => ({ id: c.id, name: c.name }));
+  const rawCategories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  const categories = rawCategories.map((c) => ({ id: c.id, name: c.name }));
 
   return (
     <div className="space-y-4">

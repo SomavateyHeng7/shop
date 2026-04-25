@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope } from "next/font/google";
 import { ToastProvider, Toaster } from "@/components/ui/toast";
-import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const bodyFont = Manrope({
@@ -31,17 +30,10 @@ export default function RootLayout({
       className={`${bodyFont.variable} ${displayFont.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
         <ToastProvider>
           {children}
           <Toaster />
         </ToastProvider>
-        </ThemeProvider>
       </body>
     </html>
   );

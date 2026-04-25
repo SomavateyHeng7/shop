@@ -1,5 +1,5 @@
 import { updateSystemSettingsAction } from "@/app/superadmin/actions";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,11 @@ function Toggle({ name, checked, label, description, danger }: {
 }
 
 export default async function SuperadminSystemPage() {
-  const settings = mockStore.system.getSettings();
+  const settings = await prisma.systemSettings.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton" },
+  });
 
   return (
     <div className="space-y-6">

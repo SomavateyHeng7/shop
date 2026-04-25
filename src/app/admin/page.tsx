@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { DashboardStats } from "@/components/admin/dashboard-stats";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const allProducts = mockStore.products.findMany({ activeOnly: true });
+  const [rawProducts, totalCategories] = await Promise.all([
+    prisma.product.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, price: true, stock: true, lowStockAt: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.category.count(),
+  ]);
+
+  const allProducts = rawProducts.map((p) => ({ ...p, price: Number(p.price) }));
 
   const totalProducts = allProducts.length;
   const totalStockValue = allProducts.reduce(
@@ -16,7 +25,7 @@ export default async function AdminDashboardPage() {
     (product) => product.stock > 0 && product.stock <= product.lowStockAt
   ).length;
   const outOfStockCount = allProducts.filter((product) => product.stock === 0).length;
-  const categories = mockStore.categories.count();
+  const categories = totalCategories;
 
   const lowStockAlerts = allProducts
     .filter((product) => product.stock > 0 && product.stock <= product.lowStockAt)

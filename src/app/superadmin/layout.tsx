@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SuperadminSidebar } from "@/components/layout/superadmin-sidebar";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { signOutAction } from "@/lib/actions/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -48,12 +49,7 @@ export default async function SuperadminLayout({
                 superadmin
               </span>
             </div>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/auth/login" });
-              }}
-            >
+            <form action={signOutAction}>
               <button
                 type="submit"
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"

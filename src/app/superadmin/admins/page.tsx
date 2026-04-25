@@ -3,12 +3,12 @@ import {
   toggleAdminActiveAction,
   updateAdminRoleAction,
 } from "@/app/superadmin/actions";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function SuperadminAdminsPage() {
-  const admins = mockStore.adminUsers.findMany();
+  const admins = await prisma.adminUser.findMany({ orderBy: { email: "asc" } });
 
   return (
     <div className="space-y-6">
@@ -92,10 +92,10 @@ export default async function SuperadminAdminsPage() {
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
-                        {admin.name.charAt(0).toUpperCase()}
+                        {(admin.name ?? admin.email).charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">{admin.name}</p>
+                        <p className="font-semibold text-slate-900">{admin.name ?? admin.email}</p>
                         <p className="text-xs text-slate-500">{admin.email}</p>
                       </div>
                     </div>

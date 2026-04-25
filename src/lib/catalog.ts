@@ -1,4 +1,4 @@
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export type ProductCardData = {
   id: string;
@@ -19,19 +19,49 @@ interface ProductFilters {
 }
 
 export async function getAllCategories() {
-  return mockStore.categories.findMany().map((cat) => ({
-    ...cat,
-    _count: {
-      products: mockStore.products.findMany({ activeOnly: true })
-        .filter((p) => p.categoryId === cat.id).length,
-    },
-  }));
+  const categories = await prisma.category.findMany({
+    include: { _count: { select: { products: { where: { isActive: true } } } } },
+    orderBy: { name: "asc" },
+  });
+  return categories;
 }
 
 export async function getProducts(filters: ProductFilters = {}): Promise<ProductCardData[]> {
-  return mockStore.products.findMany({ ...filters, activeOnly: true });
+  const { search, categorySlug, minPrice, maxPrice } = filters;
+
+  const products = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      ...(search ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+        ],
+      } : {}),
+      ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+      ...(minPrice !== undefined ? { price: { gte: minPrice } } : {}),
+      ...(maxPrice !== undefined ? { price: { lte: maxPrice } } : {}),
+    },
+    include: { category: { select: { name: true, slug: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return products.map((p) => ({
+    ...p,
+    price: Number(p.price),
+  }));
 }
 
 export async function getFeaturedProducts(limit = 8): Promise<ProductCardData[]> {
-  return mockStore.products.findMany({ activeOnly: true }).slice(0, limit);
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    include: { category: { select: { name: true, slug: true } } },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+
+  return products.map((p) => ({
+    ...p,
+    price: Number(p.price),
+  }));
 }

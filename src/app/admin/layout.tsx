@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { AdminImpersonationGate } from "@/components/admin/admin-impersonation-gate";
 import { StopImpersonationButton } from "@/components/admin/stop-impersonation-button";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { signOutAction } from "@/lib/actions/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,12 +35,7 @@ export default async function AdminLayout({
           </Link>
           <div className="flex items-center gap-2">
             {session.user.role === "superadmin" && <StopImpersonationButton />}
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/auth/login" });
-              }}
-            >
+            <form action={signOutAction}>
               <button
                 type="submit"
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
