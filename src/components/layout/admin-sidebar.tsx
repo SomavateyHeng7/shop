@@ -7,6 +7,7 @@ const links = [
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/finance", label: "Finance" },
   { href: "/admin/export", label: "Export" },
+  { href: "/admin/profile", label: "Profile" },
 ];
 
 export function AdminSidebar() {

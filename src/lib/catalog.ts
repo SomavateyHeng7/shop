@@ -16,7 +16,9 @@ type RawProductCardData = Prisma.ProductGetPayload<{
   select: typeof productCardSelect;
 }>;
 
-export type ProductCardData = Omit<RawProductCardData, "price"> & { price: number };
+export type ProductCardData = Omit<RawProductCardData, "price"> & {
+  price: number;
+};
 
 interface ProductFilters {
   search?: string;
@@ -70,19 +72,27 @@ export async function getAllCategories() {
   });
 }
 
+function serializeProduct(p: RawProductCardData): ProductCardData {
+  return { ...p, price: p.price.toNumber() };
+}
+
 export async function getProducts(filters: ProductFilters = {}) {
-  return prisma.product.findMany({
+  const products = await prisma.product.findMany({
     where: buildProductWhere(filters),
     select: productCardSelect,
     orderBy: [{ stock: "asc" }, { createdAt: "desc" }],
   });
+
+  return products.map(serializeProduct);
 }
 
 export async function getFeaturedProducts(limit = 8) {
-  return prisma.product.findMany({
+  const products = await prisma.product.findMany({
     where: { isActive: true },
     select: productCardSelect,
     orderBy: [{ stock: "asc" }, { updatedAt: "desc" }],
     take: limit,
   });
+
+  return products.map(serializeProduct);
 }
