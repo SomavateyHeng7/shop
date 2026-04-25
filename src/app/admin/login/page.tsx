@@ -1,6 +1,6 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { auth, signIn } from "@/lib/auth";
+import { signIn } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,18 +9,15 @@ export default async function AdminLoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const session = await auth();
-  if (session) {
-    redirect("/admin");
-  }
-
   const resolved = await searchParams;
   const showError = resolved.error === "CredentialsSignin";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Admin Access</p>
+        <p className="text-sm uppercase tracking-[0.18em] text-slate-500">
+          Admin Access
+        </p>
         <h1 className="mt-2 text-3xl font-semibold text-slate-900">Sign in</h1>
         <p className="mt-2 text-sm text-slate-600">
           Use your admin email and password to manage products and stock.
@@ -45,7 +42,10 @@ export default async function AdminLoginPage({
           }}
         >
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="email">
+            <label
+              className="mb-1 block text-sm font-medium text-slate-700"
+              htmlFor="email"
+            >
               Email
             </label>
             <input
@@ -58,7 +58,10 @@ export default async function AdminLoginPage({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="password">
+            <label
+              className="mb-1 block text-sm font-medium text-slate-700"
+              htmlFor="password"
+            >
               Password
             </label>
             <input
@@ -70,7 +73,9 @@ export default async function AdminLoginPage({
             />
           </div>
 
-          {showError && <p className="text-sm text-red-600">Invalid email or password.</p>}
+          {showError && (
+            <p className="text-sm text-red-600">Invalid email or password.</p>
+          )}
 
           <button
             type="submit"
