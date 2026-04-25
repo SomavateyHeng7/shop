@@ -110,14 +110,16 @@ export function ProductTable({ products }: Props) {
                   </td>
 
                   <td className="px-5 py-4">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1.5">
                       <Link
                         href={`/admin/products/${product.id}`}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        title="Edit product"
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
                       >
-                        Edit
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                        </svg>
                       </Link>
-
                       <ArchiveButton id={product.id} />
                     </div>
                   </td>
@@ -183,11 +185,13 @@ export function ProductTable({ products }: Props) {
               <div className="mt-4 flex gap-2">
                 <Link
                   href={`/admin/products/${product.id}`}
-                  className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                  </svg>
                   Edit
                 </Link>
-
                 <ArchiveButton id={product.id} />
               </div>
             </article>

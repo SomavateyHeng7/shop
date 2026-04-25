@@ -3,7 +3,7 @@ import Link from "next/link";
 const links = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/products", label: "Products" },
-  { href: "/admin/products/new", label: "Add Product" },
+  // { href: "/admin/products/new", label: "Add Product" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/api/admin/export", label: "Export CSV" },
 ];
