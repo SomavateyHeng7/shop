@@ -14,7 +14,6 @@ export default async function AdminLayout({
   const pathname = requestHeaders.get("x-pathname");
   const isLoginRoute = pathname === "/admin/login";
 
-  // Keep login route isolated from admin shell/auth redirects to prevent loops.
   if (isLoginRoute) {
     return <>{children}</>;
   }

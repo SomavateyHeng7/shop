@@ -11,6 +11,7 @@ export default async function AdminLoginPage({
 }) {
   const resolved = await searchParams;
   const showError = resolved.error === "CredentialsSignin";
+  const showServerError = resolved.error === "ServerConfig";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
@@ -35,7 +36,10 @@ export default async function AdminLoginPage({
               });
             } catch (error) {
               if (error instanceof AuthError) {
-                redirect("/admin/login?error=CredentialsSignin");
+                if (error.type === "CredentialsSignin") {
+                  redirect("/admin/login?error=CredentialsSignin");
+                }
+                redirect("/admin/login?error=ServerConfig");
               }
               throw error;
             }
@@ -75,6 +79,11 @@ export default async function AdminLoginPage({
 
           {showError && (
             <p className="text-sm text-red-600">Invalid email or password.</p>
+          )}
+          {showServerError && (
+            <p className="text-sm text-red-600">
+              Login is temporarily unavailable. Please try again shortly.
+            </p>
           )}
 
           <button
