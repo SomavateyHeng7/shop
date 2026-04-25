@@ -11,6 +11,7 @@ const updateSchema = z.object({
   stock: z.number().int().min(0).optional(),
   lowStockAt: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
+  preOrder: z.boolean().optional(),
 });
 
 export async function GET(

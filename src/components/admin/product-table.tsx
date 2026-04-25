@@ -4,8 +4,10 @@ import { ProductCardData } from "@/lib/catalog";
 import { formatPrice, getStockStatus } from "@/lib/utils";
 import { StockEditor } from "@/components/admin/stock-editor";
 
+type AdminProductRow = ProductCardData & { isActive: boolean };
+
 interface Props {
-  products: ProductCardData[];
+  products: AdminProductRow[];
 }
 
 export function ProductTable({ products }: Props) {
@@ -24,13 +26,17 @@ export function ProductTable({ products }: Props) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {products.map((product) => {
-            const status = getStockStatus(product.stock, product.lowStockAt);
+            const status = getStockStatus(product.stock, product.lowStockAt, product.preOrder);
             const rowTone =
-              status === "out_of_stock"
-                ? "bg-red-50"
-                : status === "low_stock"
-                  ? "bg-amber-50"
-                  : "bg-emerald-50";
+              !product.isActive
+                ? "bg-slate-50 opacity-60"
+                : status === "out_of_stock"
+                  ? "bg-red-50"
+                  : status === "pre_order"
+                    ? "bg-purple-50"
+                    : status === "low_stock"
+                      ? "bg-amber-50"
+                      : "bg-emerald-50";
 
             return (
               <tr key={product.id} className={rowTone}>

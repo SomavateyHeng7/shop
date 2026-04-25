@@ -1,6 +1,5 @@
 import { AddProductDialog } from "@/components/admin/add-product-dialog";
 import { ProductTable } from "@/components/admin/product-table";
-import { productCardSelect } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,17 +18,19 @@ export default async function AdminProductsPage({
 
   const [products, categories] = await Promise.all([
     prisma.product.findMany({
-      where: {
-        ...(search
-          ? {
-              name: {
-                contains: search,
-                mode: "insensitive",
-              },
-            }
-          : {}),
+      where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        price: true,
+        imageUrl: true,
+        stock: true,
+        lowStockAt: true,
+        isActive: true,
+        preOrder: true,
+        category: { select: { name: true, slug: true } },
       },
-      select: productCardSelect,
       orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
     }),
     prisma.category.findMany({
@@ -54,7 +55,7 @@ export default async function AdminProductsPage({
         />
       </form>
 
-      <ProductTable products={products.map((p) => ({ ...p, price: p.price.toNumber() }))} />
+      <ProductTable products={products.map((p) => ({ ...p, price: Number(p.price) }))} />
     </div>
   );
 }

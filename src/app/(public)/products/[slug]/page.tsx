@@ -43,9 +43,11 @@ export default async function ProductDetailPage({
               id: v.id,
               label: v.label,
               imageUrl: v.imageUrl,
+              stock: v.stock,
             }))}
             defaultImage={product.imageUrl}
             productName={product.name}
+            productStock={product.stock}
           />
         </div>
 
@@ -59,7 +61,7 @@ export default async function ProductDetailPage({
           <p className="mt-3 text-3xl font-semibold text-ink-900">{formatPrice(product.price)}</p>
 
           <div className="mt-4">
-            <StockBadge stock={product.stock} lowStockAt={product.lowStockAt} />
+            <StockBadge stock={product.stock} lowStockAt={product.lowStockAt} preOrder={product.preOrder} />
           </div>
 
           <p className="mt-6 whitespace-pre-wrap text-ink-700">

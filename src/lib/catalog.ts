@@ -9,6 +9,7 @@ export const productCardSelect = {
   imageUrl: true,
   stock: true,
   lowStockAt: true,
+  preOrder: true,
   category: { select: { name: true, slug: true } },
 } satisfies Prisma.ProductSelect;
 
