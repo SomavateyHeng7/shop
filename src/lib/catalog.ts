@@ -12,9 +12,11 @@ export const productCardSelect = {
   category: { select: { name: true, slug: true } },
 } satisfies Prisma.ProductSelect;
 
-export type ProductCardData = Prisma.ProductGetPayload<{
+type RawProductCardData = Prisma.ProductGetPayload<{
   select: typeof productCardSelect;
 }>;
+
+export type ProductCardData = Omit<RawProductCardData, "price"> & { price: number };
 
 interface ProductFilters {
   search?: string;

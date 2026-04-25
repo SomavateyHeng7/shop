@@ -22,8 +22,22 @@ model Product {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  category  Category?  @relation(fields: [categoryId], references: [id])
-  stockLogs StockLog[]
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  stockLogs   StockLog[]
+  financeData ProductFinance?
+  orderItems  OrderItem[]
+  variants    ProductVariant[]
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  label     String   // e.g. "Cherry Red", "Coral Pink"
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Category {
@@ -38,6 +52,7 @@ model StockLog {
   productId String
   change    Int
   note      String?
+  unitCost  Decimal? @db.Decimal(10, 2)  // cost per unit for restock batches
   createdAt DateTime @default(now())
 
   product Product @relation(fields: [productId], references: [id])
@@ -49,4 +64,47 @@ model AdminUser {
   passwordHash String
   name         String?
   createdAt    DateTime @default(now())
+}
+
+model FinanceSettings {
+  id               String   @id @default(cuid())
+  investmentBudget Decimal  @db.Decimal(10, 2) @default(0)
+  targetGoal       Decimal  @db.Decimal(10, 2) @default(0)
+  updatedAt        DateTime @updatedAt
+}
+
+model ProductFinance {
+  id            String   @id @default(cuid())
+  productId     String   @unique
+  boughtPrice   Decimal  @db.Decimal(10, 2) @default(0)
+  deliveryPrice Decimal  @db.Decimal(10, 2) @default(0)
+  discountPct   Decimal  @db.Decimal(5, 2)  @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  orderId   String      @unique
+  note      String?
+  createdAt DateTime    @default(now())
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  orderId       String
+  productId     String
+  productName   String
+  quantity      Int
+  boughtPrice   Decimal @db.Decimal(10, 2)
+  deliveryPrice Decimal @db.Decimal(10, 2)
+  sellPrice     Decimal @db.Decimal(10, 2)
+  discountPct   Decimal @db.Decimal(5, 2) @default(0)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
 }

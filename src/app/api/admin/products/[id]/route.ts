@@ -6,7 +6,7 @@ const updateSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   price: z.number().positive().optional(),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z.string().nullable().optional(),
   categoryId: z.string().optional().nullable(),
   stock: z.number().int().min(0).optional(),
   lowStockAt: z.number().int().min(0).optional(),
