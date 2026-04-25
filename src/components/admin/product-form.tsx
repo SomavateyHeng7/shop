@@ -28,6 +28,7 @@ interface ProductInput {
   stock: number;
   lowStockAt: number;
   isActive: boolean;
+  preOrder: boolean;
 }
 
 interface FinanceData {
@@ -81,6 +82,7 @@ export function ProductForm({
       stock: product?.stock ?? 0,
       lowStockAt: product?.lowStockAt ?? 5,
       isActive: product?.isActive ?? true,
+      preOrder: product?.preOrder ?? false,
     }),
     [product],
   );
@@ -136,6 +138,7 @@ export function ProductForm({
       stock: Number(formData.get("stock") ?? 0),
       lowStockAt: Number(formData.get("lowStockAt") ?? 5),
       isActive: formData.get("isActive") === "on",
+      preOrder: formData.get("preOrder") === "on",
     };
 
     startTransition(async () => {
@@ -470,14 +473,29 @@ export function ProductForm({
           )}
         </div>
 
-        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            name="isActive"
-            defaultChecked={defaults.isActive}
-          />
-          Active product
-        </label>
+        <div className="flex flex-wrap gap-5">
+          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              name="isActive"
+              defaultChecked={defaults.isActive}
+            />
+            Active product
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              name="preOrder"
+              defaultChecked={defaults.preOrder}
+            />
+            <span>
+              Pre-Order
+              <span className="ml-1.5 rounded-full bg-[#ede5f7] px-2 py-0.5 text-[10px] font-semibold text-[#4a3860]">
+                shows Pre-Order badge
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* — Pricing — */}

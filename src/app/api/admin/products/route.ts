@@ -11,6 +11,7 @@ const createSchema = z.object({
   categoryId: z.string().nullable().optional(),
   stock: z.number().int().min(0).default(0),
   lowStockAt: z.number().int().min(0).default(5),
+  preOrder: z.boolean().default(false),
 });
 
 export async function GET(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, description, price, imageUrl, categoryId, stock, lowStockAt } =
+  const { name, description, price, imageUrl, categoryId, stock, lowStockAt, preOrder } =
     parsed.data;
 
   const baseSlug = slugify(name);
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
       categoryId: categoryId || null,
       stock,
       lowStockAt,
+      preOrder,
     },
   });
 

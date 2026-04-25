@@ -27,7 +27,7 @@ export default async function EditProductPage({
 
   if (!product) notFound();
 
-  const serialized = { ...product, price: product.price.toNumber(), financeData: undefined, stockLogs: undefined };
+  const serialized = { ...product, price: product.price.toNumber(), financeData: undefined, stockLogs: undefined, variants: undefined };
 
   const financeData = product.financeData
     ? {
@@ -64,6 +64,7 @@ export default async function EditProductPage({
             id: v.id,
             label: v.label,
             imageUrl: v.imageUrl,
+            stock: v.stock,
             sortOrder: v.sortOrder,
           }))}
         />
@@ -74,10 +75,19 @@ export default async function EditProductPage({
         <div className="mb-4">
           <h2 className="text-base font-semibold text-slate-900">Add Stock</h2>
           <p className="mt-0.5 text-sm text-slate-500">
-            Enter the quantity received and the unit cost you paid — this updates the weighted average cost automatically.
+            {product.variants.length > 0
+              ? "This product uses variants — manage stock per variant above. The total shown here is the sum of all variant quantities."
+              : "Enter the quantity received and the unit cost you paid — this updates the weighted average cost automatically."}
           </p>
         </div>
-        <StockEditor id={product.id} initialStock={product.stock} />
+        {product.variants.length > 0 ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-900">{product.stock} total</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">managed via variants</span>
+          </div>
+        ) : (
+          <StockEditor id={product.id} initialStock={product.stock} />
+        )}
       </div>
 
       {/* Stock history */}

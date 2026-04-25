@@ -8,6 +8,7 @@ interface Variant {
   id: string;
   label: string;
   imageUrl: string | null;
+  stock: number;
   sortOrder: number;
 }
 
@@ -16,12 +17,121 @@ interface Props {
   initialVariants: Variant[];
 }
 
+function VariantStockEditor({
+  productId,
+  variant,
+  onUpdate,
+}: {
+  productId: string;
+  variant: Variant;
+  onUpdate: (id: string, newStock: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [qty, setQty] = useState("1");
+  const [note, setNote] = useState("");
+  const [pending, startTransition] = useTransition();
+  const { showToast } = useToast();
+
+  function submit(delta: number) {
+    const change = delta * parseInt(qty, 10);
+    if (!change) return;
+    startTransition(async () => {
+      const res = await fetch(
+        `/api/admin/products/${productId}/variants/${variant.id}/stock`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ change, note: note.trim() || undefined }),
+        }
+      );
+      if (!res.ok) {
+        showToast({ title: "Failed to update stock", variant: "error" });
+        return;
+      }
+      const updated = await res.json() as Variant;
+      onUpdate(variant.id, updated.stock);
+      setOpen(false);
+      setQty("1");
+      setNote("");
+      showToast({
+        title: `${change > 0 ? "+" : ""}${change} for ${variant.label}`,
+        variant: "success",
+      });
+    });
+  }
+
+  if (open) {
+    return (
+      <div className="mt-1.5 flex flex-col gap-1.5">
+        <div className="flex items-center gap-1">
+          <input
+            autoFocus
+            type="number"
+            min={1}
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(1); if (e.key === "Escape") setOpen(false); }}
+            className="w-14 rounded border border-slate-300 px-1.5 py-0.5 text-xs"
+            placeholder="Qty"
+          />
+        </div>
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Note (opt.)"
+          className="w-[5.5rem] rounded border border-slate-300 px-1.5 py-0.5 text-xs text-slate-600 placeholder:text-slate-400"
+        />
+        <div className="flex gap-1">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => submit(1)}
+            className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+          >
+            +Add
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => submit(-1)}
+            className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-red-600 disabled:opacity-60"
+          >
+            -Sub
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded border border-slate-300 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-1 flex items-center gap-1.5">
+      <span className="text-xs font-semibold text-slate-700">{variant.stock}</span>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-500 hover:bg-slate-100"
+      >
+        edit
+      </button>
+    </div>
+  );
+}
+
 export function VariantManager({ productId, initialVariants }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
   const [variants, setVariants] = useState(initialVariants);
   const [label, setLabel] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [initialStock, setInitialStock] = useState("0");
   const [uploading, setUploading] = useState(false);
   const [adding, startAdd] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -55,13 +165,19 @@ export function VariantManager({ productId, initialVariants }: Props) {
       const res = await fetch(`/api/admin/products/${productId}/variants`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: label.trim(), imageUrl, sortOrder: variants.length }),
+        body: JSON.stringify({
+          label: label.trim(),
+          imageUrl,
+          stock: parseInt(initialStock, 10) || 0,
+          sortOrder: variants.length,
+        }),
       });
       if (!res.ok) { showToast({ title: "Failed to add variant", variant: "error" }); return; }
       const created = await res.json() as Variant;
       setVariants((v) => [...v, created]);
       setLabel("");
       setImageUrl(null);
+      setInitialStock("0");
       showToast({ title: `"${created.label}" added`, variant: "success" });
       router.refresh();
     });
@@ -77,36 +193,49 @@ export function VariantManager({ productId, initialVariants }: Props) {
     router.refresh();
   }
 
+  function handleStockUpdate(id: string, newStock: number) {
+    setVariants((v) => v.map((x) => x.id === id ? { ...x, stock: newStock } : x));
+    router.refresh();
+  }
+
+  const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+
   return (
     <div className="space-y-5">
       {/* Existing variants */}
       {variants.length > 0 && (
-        <div className="flex flex-wrap gap-3">
-          {variants.map((v) => (
-            <div key={v.id} className="group relative flex flex-col items-center gap-1.5">
-              <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                {v.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={v.imageUrl} alt={v.label} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No img</div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => deleteVariant(v.id)}
-                  disabled={deletingId === v.id}
-                  className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition group-hover:opacity-100 disabled:opacity-50"
-                  title="Remove variant"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white" className="h-5 w-5">
-                    <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
-                  </svg>
-                </button>
+        <>
+          <div className="flex flex-wrap gap-4">
+            {variants.map((v) => (
+              <div key={v.id} className="group relative flex flex-col items-center">
+                <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  {v.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.imageUrl} alt={v.label} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No img</div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => deleteVariant(v.id)}
+                    disabled={deletingId === v.id}
+                    className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition group-hover:opacity-100 disabled:opacity-50"
+                    title="Remove variant"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white" className="h-5 w-5">
+                      <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                    </svg>
+                  </button>
+                </div>
+                <span className="mt-1 max-w-[5rem] truncate text-center text-xs font-medium text-slate-600">{v.label}</span>
+                <VariantStockEditor productId={productId} variant={v} onUpdate={handleStockUpdate} />
               </div>
-              <span className="max-w-[5rem] truncate text-center text-xs text-slate-600">{v.label}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400">
+            Total stock across all variants: <span className="font-semibold text-slate-600">{totalStock}</span>
+          </p>
+        </>
       )}
 
       {/* Add variant form */}
@@ -147,6 +276,16 @@ export function VariantManager({ productId, initialVariants }: Props) {
               placeholder="Color or option name"
               className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-900 w-48"
             />
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-500 whitespace-nowrap">Initial stock:</label>
+              <input
+                type="number"
+                min={0}
+                value={initialStock}
+                onChange={(e) => setInitialStock(e.target.value)}
+                className="w-16 h-7 rounded-md border border-slate-300 px-2 text-sm"
+              />
+            </div>
             {imageUrl && (
               <button
                 type="button"

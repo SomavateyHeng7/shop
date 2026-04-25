@@ -5,6 +5,8 @@ import { ProductCardData } from "@/lib/catalog";
 import { formatPrice } from "@/lib/utils";
 
 export function ProductCard({ product }: { product: ProductCardData }) {
+  const isOutOfStock = !product.preOrder && product.stock === 0;
+
   return (
     <Link href={`/products/${product.slug}`} className="group block">
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white transition-shadow hover:shadow-lg">
@@ -15,6 +17,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
               alt={product.name}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
+              style={isOutOfStock ? { filter: "grayscale(100%)", opacity: 0.5 } : undefined}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           ) : (
@@ -24,7 +27,29 @@ export function ProductCard({ product }: { product: ProductCardData }) {
               </svg>
             </div>
           )}
+
+          {/* Out of stock overlay */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/30">
+              <span
+                style={{ transform: "rotate(-20deg)" }}
+                className="rounded-md border-2 border-red-500 bg-white/80 px-3 py-1 text-sm font-bold uppercase tracking-widest text-red-500"
+              >
+                Sold Out
+              </span>
+            </div>
+          )}
+
+          {/* Pre-order corner ribbon */}
+          {product.preOrder && (
+            <div className="absolute top-2 left-2">
+              <span className="rounded-full bg-[#9b7fb8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow">
+                Pre-Order
+              </span>
+            </div>
+          )}
         </div>
+
         <div className="p-4">
           {product.category && (
             <p className="mb-1 text-xs font-medium uppercase tracking-wider text-zinc-400">
@@ -35,10 +60,10 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             {product.name}
           </h3>
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-zinc-900">
+            <span className={`text-lg font-bold ${isOutOfStock ? "text-zinc-400 line-through" : "text-zinc-900"}`}>
               {formatPrice(product.price)}
             </span>
-            <StockBadge stock={product.stock} lowStockAt={product.lowStockAt} />
+            <StockBadge stock={product.stock} lowStockAt={product.lowStockAt} preOrder={product.preOrder} />
           </div>
         </div>
       </div>

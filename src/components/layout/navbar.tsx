@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getAllCategories } from "@/lib/catalog";
+import { auth } from "@/lib/auth";
 
 interface Props {
   searchValue?: string;
 }
 
 export async function Navbar({ searchValue = "" }: Props) {
-  const categories = await getAllCategories();
+  const [categories, session] = await Promise.all([getAllCategories(), auth()]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-sand-200 bg-white/90 backdrop-blur">
@@ -29,12 +30,24 @@ export async function Navbar({ searchValue = "" }: Props) {
               {category.name}
             </Link>
           ))}
-          <Link
-            className="rounded-lg border border-sand-300 px-3 py-1.5 text-sm font-medium text-ink-700 transition hover:bg-sand-100"
-            href="/admin/login"
-          >
-            Login
-          </Link>
+          {session ? (
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 rounded-full border border-[#d4c4e8] bg-[#f5f0fb] px-3 py-1.5 text-sm font-medium text-[#4a3860] transition hover:bg-[#ede5f7]"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#9b7fb8] text-[10px] font-bold text-white">
+                {(session.user?.name ?? session.user?.email ?? "A").charAt(0).toUpperCase()}
+              </span>
+              <span>{session.user?.name ?? "Admin"}</span>
+            </Link>
+          ) : (
+            <Link
+              className="rounded-lg border border-sand-300 px-3 py-1.5 text-sm font-medium text-ink-700 transition hover:bg-sand-100"
+              href="/admin/login"
+            >
+              Login
+            </Link>
+          )}
         </nav>
 
         <form action="/products" className="hidden w-72 items-center gap-2 md:flex">
@@ -47,7 +60,7 @@ export async function Navbar({ searchValue = "" }: Props) {
           />
           <button
             type="submit"
-            className="rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-700"
+            className="rounded-full bg-[#9b7fb8] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7a5fa0]"
           >
             Search
           </button>
