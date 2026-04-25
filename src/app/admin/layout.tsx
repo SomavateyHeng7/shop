@@ -16,6 +16,10 @@ export default async function AdminLayout({
 
   const session = await auth();
 
+  if (isLoginRoute && session) {
+    redirect("/admin");
+  }
+
   const shouldShowLoginOnly = isLoginRoute && !session;
 
   if (!session && !shouldShowLoginOnly) {
