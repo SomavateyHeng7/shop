@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { auth, signOut } from "@/lib/auth";
@@ -10,14 +9,6 @@ export const dynamic = "force-dynamic";
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const requestHeaders = await headers();
-  const pathname = requestHeaders.get("x-pathname");
-  const isLoginRoute = pathname === "/admin/login";
-
-  if (isLoginRoute) {
-    return <>{children}</>;
-  }
-
   const session = await auth();
 
   if (!session) {

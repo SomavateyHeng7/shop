@@ -18,6 +18,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
+  // Redirect logged-in users away from login page
+  if (isLoginPage && hasSession) {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
   if (isApiAdminRoute && !hasSession) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,6 +1,6 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { auth, signIn } from "@/lib/auth";
+import { signIn } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +9,6 @@ export default async function AdminLoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const session = await auth();
-  if (session) {
-    redirect("/admin");
-  }
-
   const resolved = await searchParams;
   const showError = resolved.error === "CredentialsSignin";
 
