@@ -16,11 +16,13 @@ export default async function AdminLayout({
 
   const session = await auth();
 
-  if (!session && !isLoginRoute) {
+  const shouldShowLoginOnly = isLoginRoute && !session;
+
+  if (!session && !shouldShowLoginOnly) {
     redirect("/admin/login");
   }
 
-  if (isLoginRoute) {
+  if (shouldShowLoginOnly) {
     return <>{children}</>;
   }
 
@@ -29,7 +31,15 @@ export default async function AdminLayout({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/admin" className="shrink-0">
-            <Image src="/st-shop.png" alt="ST Shop" width={120} height={40} style={{ height: 40, width: "auto" }} className="object-contain" priority />
+            <Image
+              src="/st-shop.png"
+              alt="ST Shop"
+              width={120}
+              height={40}
+              style={{ height: 40, width: "auto" }}
+              className="object-contain"
+              priority
+            />
           </Link>
           <form
             action={async () => {
