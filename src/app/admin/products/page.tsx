@@ -60,8 +60,11 @@ export default async function AdminProductsPage({
         <h1 className="text-3xl font-semibold text-slate-900">Products</h1>
         <Link
           href="/admin/products/new"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
+          className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
         >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
           Add Product
         </Link>
       </div>

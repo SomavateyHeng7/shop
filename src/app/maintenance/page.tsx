@@ -1,4 +1,12 @@
-export default function MaintenancePage() {
+import { notFound } from "next/navigation";
+import { getSystemSettings } from "@/lib/system-settings";
+
+export const dynamic = "force-dynamic";
+
+export default async function MaintenancePage() {
+  const settings = await getSystemSettings();
+  if (!settings?.maintenanceMode) notFound();
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 text-center">
       <div className="max-w-md">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAllCategories } from "@/lib/catalog";
+import { CategoriesDropdown } from "@/components/layout/categories-dropdown";
 
 interface Props {
   searchValue?: string;
@@ -21,32 +22,7 @@ export async function Navbar({ searchValue = "" }: Props) {
             All Products
           </Link>
 
-          <details className="group relative">
-            <summary className="cursor-pointer list-none transition-colors hover:text-accent-700">
-              Categories
-            </summary>
-            <div className="absolute left-0 top-8 w-64 rounded-xl border border-sand-200 bg-white p-3 text-sm shadow-xl">
-              <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
-                {categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    className="block rounded-md px-2 py-1.5 text-ink-700 hover:bg-sand-100 hover:text-accent-800"
-                    href={`/categories/${category.slug}`}
-                  >
-                    {category.name}
-                  </Link>
-                ))}
-              </div>
-              <div className="mt-2 border-t border-sand-200 pt-2">
-                <Link
-                  className="block rounded-md px-2 py-1.5 font-semibold text-accent-700 hover:bg-sand-100 hover:text-accent-800"
-                  href="/products"
-                >
-                  View all categories
-                </Link>
-              </div>
-            </div>
-          </details>
+          <CategoriesDropdown categories={categories} />
 
         </nav>
 

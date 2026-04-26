@@ -16,7 +16,7 @@ interface Props {
 }
 
 const STATUS_OPTIONS = [
-  { value: "", label: "All statuses" },
+  { value: "", label: "All Status" },
   { value: "in_stock", label: "In Stock" },
   { value: "low_stock", label: "Low Stock" },
   { value: "out_of_stock", label: "Out of Stock" },
