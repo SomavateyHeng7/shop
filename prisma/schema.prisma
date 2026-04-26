@@ -63,6 +63,8 @@ model SystemSettings {
   adminWritesEnabled      Boolean  @default(true)
   allowNewAdminInvites    Boolean  @default(true)
   globalLowStockThreshold Int      @default(5)
+  messengerUrl            String?
+  telegramUrl             String?
   updatedAt               DateTime @updatedAt
 }
 

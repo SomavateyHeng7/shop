@@ -45,6 +45,18 @@ export default async function SuperadminLayout({
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              User Site
+            </Link>
+            <Link
+              href="/admin"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Admin
+            </Link>
             <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 sm:flex">
               <div className="h-5 w-5 rounded-full bg-slate-900 flex items-center justify-center">
                 <span className="text-[10px] font-bold text-white uppercase">

@@ -31,7 +31,10 @@ export default async function ProductDetailPage({
   return (
     <StorefrontShell>
       <div className="mb-4">
-        <Link href="/products" className="text-sm font-medium text-accent-700 hover:text-accent-800">
+        <Link href="/products" className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-700 hover:text-accent-800">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
           Back to products
         </Link>
       </div>
@@ -67,6 +70,42 @@ export default async function ProductDetailPage({
           <p className="mt-6 whitespace-pre-wrap text-ink-700">
             {product.description || "No product description available yet."}
           </p>
+
+          <div className="mt-8 rounded-2xl border border-sand-200 bg-sand-50 p-5">
+            <p className="text-sm font-semibold text-ink-900">Interested? Contact us to order</p>
+            <p className="mt-0.5 text-xs text-ink-500">We&apos;ll get back to you as soon as possible.</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {settings?.messengerUrl ? (
+                <a
+                  href={settings.messengerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.84 1.26 5.387 3.27 7.14V22l2.98-1.638a10.3 10.3 0 002.75.377c5.523 0 10-4.145 10-9.259S17.523 2 12 2zm1.006 12.466l-2.548-2.718-4.97 2.718 5.473-5.81 2.609 2.718 4.91-2.718-5.474 5.81z" />
+                  </svg>
+                  Messenger
+                </a>
+              ) : null}
+              {settings?.telegramUrl ? (
+                <a
+                  href={settings.telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.7 8.01c-.12.57-.46.71-.93.44l-2.57-1.89-1.24 1.19c-.14.14-.25.25-.51.25l.18-2.6 4.74-4.28c.21-.18-.04-.28-.32-.1L7.54 14.6l-2.52-.79c-.55-.17-.56-.55.11-.81l9.86-3.8c.46-.17.86.11.65.6z" />
+                  </svg>
+                  Telegram
+                </a>
+              ) : null}
+              {!settings?.messengerUrl && !settings?.telegramUrl && (
+                <p className="text-sm text-ink-400">Contact links not set up yet.</p>
+              )}
+            </div>
+          </div>
         </div>
       </article>
     </StorefrontShell>

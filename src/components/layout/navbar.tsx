@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { getAllCategories } from "@/lib/catalog";
 import { CategoriesDropdown } from "@/components/layout/categories-dropdown";
+import { ProfileMenu } from "@/components/layout/profile-menu";
+import { auth } from "@/lib/auth";
 
 interface Props {
   searchValue?: string;
 }
 
 export async function Navbar({ searchValue = "" }: Props) {
-  const categories = await getAllCategories();
+  const [categories, session] = await Promise.all([getAllCategories(), auth()]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-sand-200 bg-white/90 backdrop-blur">
@@ -41,12 +43,20 @@ export async function Navbar({ searchValue = "" }: Props) {
             Search
           </button>
         </form>
-        <Link
-            className="rounded-full border border-accent-600 px-4 py-2 text-sm font-semibold text-accent-700 transition hover:bg-accent-50"
+        {session?.user ? (
+          <ProfileMenu
+            name={session.user.name ?? null}
+            email={session.user.email ?? ""}
+            role={session.user.role as "admin" | "superadmin"}
+          />
+        ) : (
+          <Link
             href="/auth/login"
+            className="rounded-full border border-accent-600 px-4 py-2 text-sm font-semibold text-accent-700 transition hover:bg-accent-50"
           >
             Login
           </Link>
+        )}
         
 
         <details className="relative md:hidden">
