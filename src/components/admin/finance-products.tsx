@@ -150,20 +150,11 @@ export function FinanceProducts({ products }: { products: ProductRow[] }) {
 
       {/* Product table */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Product Pricing</h2>
-            <p className="mt-0.5 text-sm text-slate-500">
-              Cost, sell price, discount, and profit per product.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => window.open("/api/admin/finance/export", "_blank")}
-          >
-            Export CSV
-          </Button>
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h2 className="text-base font-semibold text-slate-900">Product Pricing</h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Cost, sell price, discount, and profit per product.
+          </p>
         </div>
 
         <div className="overflow-x-auto">

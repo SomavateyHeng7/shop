@@ -6,7 +6,8 @@ const links = [
   // { href: "/admin/products/new", label: "Add Product" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/finance", label: "Finance" },
-  { href: "/api/admin/export", label: "Export CSV" },
+  { href: "/admin/export", label: "Export" },
+  { href: "/admin/profile", label: "Profile" },
 ];
 
 export function AdminSidebar() {

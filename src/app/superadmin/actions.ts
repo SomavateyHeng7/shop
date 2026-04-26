@@ -16,6 +16,9 @@ export async function createAdminUserAction(formData: FormData) {
 
   if (!email || !name) return;
 
+  const settings = await prisma.systemSettings.findUnique({ where: { id: "singleton" } });
+  if (settings?.allowNewAdminInvites === false) return;
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   await prisma.adminUser.create({ data: { email, name, role, passwordHash } });

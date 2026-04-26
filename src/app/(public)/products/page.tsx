@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import { ProductGrid } from "@/components/product-grid";
 import { StorefrontShell } from "@/components/layout/storefront-shell";
 import { getAllCategories, getProducts } from "@/lib/catalog";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,9 @@ export default async function ProductsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const settings = await getSystemSettings();
+  if (settings?.catalogPublic === false) redirect("/");
+
   const resolved = await searchParams;
   const search = resolved.search?.trim() || undefined;
   const category = resolved.category?.trim() || undefined;

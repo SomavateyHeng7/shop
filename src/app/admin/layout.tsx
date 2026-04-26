@@ -6,6 +6,7 @@ import { StopImpersonationButton } from "@/components/admin/stop-impersonation-b
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { auth } from "@/lib/auth";
 import { signOutAction } from "@/lib/actions/auth";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,9 @@ export default async function AdminLayout({
   if (isLoginRoute) {
     return <>{children}</>;
   }
+
+  const settings = await getSystemSettings();
+  const writesDisabled = settings?.adminWritesEnabled === false;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -46,6 +50,12 @@ export default async function AdminLayout({
           </div>
         </div>
       </header>
+
+      {writesDisabled && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs font-medium text-amber-800">
+          Admin write access is currently disabled. Products and categories cannot be created or edited.
+        </div>
+      )}
 
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
         <AdminSidebar />

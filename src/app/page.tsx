@@ -1,11 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ProductGrid } from "@/components/product-grid";
 import { StorefrontShell } from "@/components/layout/storefront-shell";
 import { getFeaturedProducts } from "@/lib/catalog";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const settings = await getSystemSettings();
+  if (settings?.maintenanceMode) redirect("/maintenance");
+
   const featuredProducts = await getFeaturedProducts(8);
 
   return (

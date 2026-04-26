@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
+  const settings = await prisma.systemSettings.findUnique({ where: { id: "singleton" } });
+  if (settings?.catalogPublic === false) {
+    return Response.json([], { status: 200 });
+  }
+
   const { searchParams } = request.nextUrl;
   const search = searchParams.get("search") ?? undefined;
   const categorySlug = searchParams.get("category") ?? undefined;

@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { StorefrontShell } from "@/components/layout/storefront-shell";
 import { StockBadge } from "@/components/stock-badge";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,9 @@ export default async function ProductDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const settings = await getSystemSettings();
+  if (settings?.catalogPublic === false) redirect("/");
+
   const { slug } = await params;
   const raw = await prisma.product.findFirst({
     where: { OR: [{ slug }, { id: slug }], isActive: true },

@@ -8,7 +8,12 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function SuperadminAdminsPage() {
-  const admins = await prisma.adminUser.findMany({ orderBy: { email: "asc" } });
+  const [admins, settings] = await Promise.all([
+    prisma.adminUser.findMany({ orderBy: { email: "asc" } }),
+    prisma.systemSettings.findUnique({ where: { id: "singleton" } }),
+  ]);
+
+  const invitesAllowed = settings?.allowNewAdminInvites !== false;
 
   return (
     <div className="space-y-6">
@@ -21,6 +26,11 @@ export default async function SuperadminAdminsPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500">Create Admin User</h2>
+        {!invitesAllowed ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            New admin invites are currently disabled. Enable &ldquo;Allow New Admin Invites&rdquo; in System Controls to create accounts.
+          </p>
+        ) : (
         <form action={createAdminUserAction} className="grid gap-4 md:grid-cols-[1fr_1fr_auto_auto]">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-600" htmlFor="create-name">Full name</label>
@@ -64,6 +74,7 @@ export default async function SuperadminAdminsPage() {
             </button>
           </div>
         </form>
+        )}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">

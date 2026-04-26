@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ImpersonateAdminButton } from "@/components/superadmin/impersonate-admin-button";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  SUPERADMIN_IMPERSONATION_QUERY,
+  SUPERADMIN_IMPERSONATION_VALUE,
+  SUPERADMIN_IMPERSONATION_NAME_QUERY,
+} from "@/lib/impersonation";
 
 const links = [
   {
@@ -37,6 +42,16 @@ const links = [
     ),
   },
   {
+    href: "/superadmin/profile",
+    label: "Profile",
+    exact: false,
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+      </svg>
+    ),
+  },
+  {
     href: "/superadmin/logs",
     label: "Audit Logs",
     exact: false,
@@ -48,8 +63,16 @@ const links = [
   },
 ];
 
-export function SuperadminSidebar() {
+interface Admin {
+  id: string;
+  name: string | null;
+  email: string;
+}
+
+export function SuperadminSidebar({ admins }: { admins: Admin[] }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [selectedId, setSelectedId] = useState(admins[0]?.id ?? "");
 
   function isActive(href: string, exact: boolean) {
     return exact ? pathname === href : pathname.startsWith(href);
@@ -83,8 +106,41 @@ export function SuperadminSidebar() {
           );
         })}
       </nav>
-      <div className="border-t border-slate-100 p-2">
-        <ImpersonateAdminButton className="flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-900 transition-colors hover:border-amber-300 hover:bg-amber-100" />
+      <div className="border-t border-slate-100 p-3 space-y-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          Impersonate
+        </p>
+        {admins.length === 0 ? (
+          <p className="text-xs text-slate-400">No active admins</p>
+        ) : (
+          <>
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-slate-400 focus:bg-white"
+            >
+              {admins.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name ?? a.email}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                const admin = admins.find((a) => a.id === selectedId);
+                if (!admin) return;
+                const name = encodeURIComponent(admin.name ?? admin.email);
+                router.push(
+                  `/admin?${SUPERADMIN_IMPERSONATION_QUERY}=${SUPERADMIN_IMPERSONATION_VALUE}&${SUPERADMIN_IMPERSONATION_NAME_QUERY}=${name}`
+                );
+              }}
+              className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100"
+            >
+              Impersonate →
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );

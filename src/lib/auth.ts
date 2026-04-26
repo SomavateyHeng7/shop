@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  portal: z.enum(["admin", "superadmin"]).default("admin"),
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -23,11 +22,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const { email, password, portal } = parsed.data;
+        const { email, password } = parsed.data;
 
         const user = await prisma.adminUser.findUnique({ where: { email } });
         if (!user || !user.isActive) return null;
-        if (user.role !== portal) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;

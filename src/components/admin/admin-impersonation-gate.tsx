@@ -7,6 +7,8 @@ import {
   SUPERADMIN_IMPERSONATION_KEY,
   SUPERADMIN_IMPERSONATION_QUERY,
   SUPERADMIN_IMPERSONATION_VALUE,
+  SUPERADMIN_IMPERSONATION_NAME_QUERY,
+  SUPERADMIN_IMPERSONATION_NAME_KEY,
 } from "@/lib/impersonation";
 
 type AdminImpersonationGateProps = {
@@ -33,11 +35,16 @@ export function AdminImpersonationGate({ role, children }: AdminImpersonationGat
 
     if (hasImpersonationIntent) {
       sessionStorage.setItem(SUPERADMIN_IMPERSONATION_KEY, "active");
+      const asName = searchParams.get(SUPERADMIN_IMPERSONATION_NAME_QUERY);
+      if (asName) {
+        sessionStorage.setItem(SUPERADMIN_IMPERSONATION_NAME_KEY, decodeURIComponent(asName));
+      }
       setIsAllowed(true);
       setIsReady(true);
 
       const nextParams = new URLSearchParams(searchParams.toString());
       nextParams.delete(SUPERADMIN_IMPERSONATION_QUERY);
+      nextParams.delete(SUPERADMIN_IMPERSONATION_NAME_QUERY);
       const nextUrl = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
 
       router.replace(nextUrl);

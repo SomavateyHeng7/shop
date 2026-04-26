@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SuperadminSidebar } from "@/components/layout/superadmin-sidebar";
 import { auth } from "@/lib/auth";
 import { signOutAction } from "@/lib/actions/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,12 @@ export default async function SuperadminLayout({
   if (session.user.role !== "superadmin") {
     redirect("/admin");
   }
+
+  const admins = await prisma.adminUser.findMany({
+    where: { isActive: true, role: "admin" },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -62,7 +69,7 @@ export default async function SuperadminLayout({
       </header>
 
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[220px_1fr] lg:px-8">
-        <SuperadminSidebar />
+        <SuperadminSidebar admins={admins} />
         <div className="min-w-0">{children}</div>
       </div>
     </div>

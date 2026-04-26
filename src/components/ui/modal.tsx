@@ -56,8 +56,22 @@ export function Modal({
           className
         )}
       >
-        {title && <h2 className="text-xl font-semibold text-slate-900">{title}</h2>}
-        {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            {title && <h2 className="text-xl font-semibold text-slate-900">{title}</h2>}
+            {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         <div className="mt-4">{children}</div>
 
