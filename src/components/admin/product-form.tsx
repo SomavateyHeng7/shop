@@ -1,9 +1,17 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState, useTransition } from "react";
+import {
+  ChangeEvent,
+  DragEvent,
+  FormEvent,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
+import { formatPrice } from "@/lib/utils";
 
 interface CategoryOption {
   id: string;
@@ -14,106 +22,124 @@ interface ProductInput {
   id: string;
   name: string;
   description: string | null;
-  price: string | number | { toString(): string };
+  price: number;
   imageUrl: string | null;
   categoryId: string | null;
   stock: number;
   lowStockAt: number;
   isActive: boolean;
+  preOrder: boolean;
+}
+
+interface FinanceData {
+  boughtPrice: string;
+  deliveryPrice: string;
+  discountPct: string;
 }
 
 interface Props {
   mode: "create" | "edit";
   categories: CategoryOption[];
   product?: ProductInput;
+  financeData?: FinanceData | null;
+  onSuccess?: () => void;
 }
 
-interface ProductFormState {
-  name: string;
-  description: string;
-  price: string;
-  imageUrl: string;
-  categoryId: string;
-  stock: string;
-  lowStockAt: string;
-  isActive: boolean;
-}
-
-export function ProductForm({ mode, categories, product }: Props) {
+export function ProductForm({
+  mode,
+  categories,
+  product,
+  financeData,
+  onSuccess,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    product?.imageUrl ?? null,
+  );
   const [error, setError] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { showToast } = useToast();
 
-  const defaults = useMemo<ProductFormState>(
+  // Pricing state
+  const [sellPrice, setSellPrice] = useState(String(product?.price ?? ""));
+  const [boughtPrice, setBoughtPrice] = useState(
+    financeData?.boughtPrice ?? "",
+  );
+  const [deliveryPrice, setDeliveryPrice] = useState(
+    financeData?.deliveryPrice ?? "",
+  );
+  const [discountPct, setDiscountPct] = useState(
+    financeData?.discountPct ?? "",
+  );
+
+  const defaults = useMemo(
     () => ({
       name: product?.name ?? "",
       description: product?.description ?? "",
-      price: String(product?.price ?? ""),
-      imageUrl: product?.imageUrl ?? "",
       categoryId: product?.categoryId ?? "",
       stock: String(product?.stock ?? 0),
       lowStockAt: String(product?.lowStockAt ?? 5),
       isActive: product?.isActive ?? true,
+      preOrder: product?.preOrder ?? false,
     }),
-    [product]
+    [product],
   );
 
-  const [form, setForm] = useState<ProductFormState>(defaults);
+  // Live profit preview
+  const sell = Number(sellPrice) || 0;
+  const bought = Number(boughtPrice) || 0;
+  const delivery = Number(deliveryPrice) || 0;
+  const discount = Math.min(Math.max(Number(discountPct) || 0, 0), 100);
+  const finalPrice = sell * (1 - discount / 100);
+  const profitPerUnit = finalPrice - bought - delivery;
 
-  function updateField<K extends keyof ProductFormState>(
-    key: K,
-    value: ProductFormState[K]
-  ) {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  }
-
-  async function onUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  async function uploadFile(file: File) {
     setUploading(true);
     setError("");
-
     const formData = new FormData();
     formData.append("file", file);
-
     const response = await fetch("/api/upload", {
       method: "POST",
       body: formData,
     });
-
     setUploading(false);
-
     if (!response.ok) {
       setError("Image upload failed.");
       showToast({ title: "Image upload failed", variant: "error" });
       return;
     }
-
     const data = (await response.json()) as { url: string };
-    updateField("imageUrl", data.url);
-    showToast({ title: "Image uploaded", variant: "success" });
+    setImageUrl(data.url);
+  }
+
+  function onUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) uploadFile(file);
+  }
+
+  function onDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (file?.type.startsWith("image/")) uploadFile(file);
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
+    const formData = new FormData(event.currentTarget);
     const payload = {
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price: Number(form.price || 0),
-      imageUrl: form.imageUrl.trim(),
-      categoryId: form.categoryId || null,
-      stock: Number(form.stock || 0),
-      lowStockAt: Number(form.lowStockAt || 0),
-      isActive: form.isActive,
+      name: String(formData.get("name") ?? ""),
+      description: String(formData.get("description") ?? ""),
+      price: Number(sellPrice) || 0,
+      imageUrl: imageUrl || null,
+      categoryId: String(formData.get("categoryId") ?? "") || null,
+      stock: Number(formData.get("stock") ?? 0),
+      lowStockAt: Number(formData.get("lowStockAt") ?? 5),
+      isActive: formData.get("isActive") === "on",
+      preOrder: formData.get("preOrder") === "on",
     };
 
     startTransition(async () => {
@@ -121,16 +147,15 @@ export function ProductForm({ mode, categories, product }: Props) {
         mode === "create"
           ? "/api/admin/products"
           : `/api/admin/products/${product?.id}`;
-
       const method = mode === "create" ? "POST" : "PUT";
 
-      const response = await fetch(endpoint, {
+      const productRes = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
+      if (!productRes.ok) {
         setError("Failed to save product.");
         showToast({
           title: "Save failed",
@@ -140,19 +165,49 @@ export function ProductForm({ mode, categories, product }: Props) {
         return;
       }
 
+      const saved = (await productRes.json()) as { id: string };
+      const productId = saved.id;
+
+      const hasPricing = sellPrice || boughtPrice || deliveryPrice || discountPct;
+      if (hasPricing) {
+        const pricingRes = await fetch(
+          `/api/admin/finance/products/${productId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sellPrice: Number(sellPrice) || 0,
+              boughtPrice: Number(boughtPrice) || 0,
+              deliveryPrice: Number(deliveryPrice) || 0,
+              discountPct: Number(discountPct) || 0,
+            }),
+          },
+        );
+        if (!pricingRes.ok) {
+          showToast({
+            title: "Product saved but pricing failed to save",
+            variant: "error",
+          });
+          return;
+        }
+      }
+
       showToast({
         title: mode === "create" ? "Product created" : "Changes saved",
         variant: "success",
       });
 
-      router.push("/admin/products");
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/admin/products");
+      }
       router.refresh();
     });
   }
 
   async function archive() {
     if (!product) return;
-
     startTransition(async () => {
       const response = await fetch(`/api/admin/products/${product.id}`, {
         method: "DELETE",
@@ -170,324 +225,395 @@ export function ProductForm({ mode, categories, product }: Props) {
     });
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
-
-  const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
+  const submitLabel = pending
+    ? "Saving…"
+    : mode === "create"
+      ? "Create Product"
+      : "Save Changes";
 
   return (
     <>
       <form
         onSubmit={onSubmit}
-        className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6"
       >
-        <div className="border-b border-slate-200 bg-slate-50 px-6 py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                {mode === "create" ? "New product" : "Edit product"}
-              </p>
-              <h2 className="mt-1 text-xl font-semibold text-slate-950">
-                {mode === "create" ? "Create product" : form.name || "Product details"}
-              </h2>
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm text-slate-600">
+            {mode === "create"
+              ? "Fill in the fields, then create the product."
+              : "Update product details and click Save Changes."}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-60"
+            >
+              {submitLabel}
+            </button>
 
-            <label className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-              <span className="text-sm font-medium text-slate-700">
-                {form.isActive ? "Active" : "Draft"}
-              </span>
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(event) => updateField("isActive", event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
-          <div className="space-y-6">
-            <section className="rounded-2xl border border-slate-200 p-5">
-              <div className="mb-5">
-                <h3 className="text-base font-semibold text-slate-950">
-                  Basic information
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Add the product name, description, price, and category.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className={labelClass} htmlFor="name">
-                    Product name
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    value={form.name}
-                    onChange={(event) => updateField("name", event.target.value)}
-                    required
-                    placeholder="Example: Classic black hoodie"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass} htmlFor="description">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={form.description}
-                    onChange={(event) =>
-                      updateField("description", event.target.value)
-                    }
-                    rows={6}
-                    placeholder="Write a short product description."
-                    className={inputClass}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className={labelClass} htmlFor="price">
-                      Price
-                    </label>
-                    <input
-                      id="price"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      name="price"
-                      value={form.price}
-                      onChange={(event) => updateField("price", event.target.value)}
-                      required
-                      placeholder="0.00"
-                      className={inputClass}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={labelClass} htmlFor="categoryId">
-                      Category
-                    </label>
-                    <select
-                      id="categoryId"
-                      name="categoryId"
-                      value={form.categoryId}
-                      onChange={(event) =>
-                        updateField("categoryId", event.target.value)
-                      }
-                      className={inputClass}
-                    >
-                      <option value="">Uncategorized</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-slate-200 p-5">
-              <div className="mb-5">
-                <h3 className="text-base font-semibold text-slate-950">
-                  Inventory
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Track available quantity and low stock alerts.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className={labelClass} htmlFor="stock">
-                    Stock
-                  </label>
-                  <input
-                    id="stock"
-                    type="number"
-                    min={0}
-                    name="stock"
-                    value={form.stock}
-                    onChange={(event) => updateField("stock", event.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass} htmlFor="lowStockAt">
-                    Low stock threshold
-                  </label>
-                  <input
-                    id="lowStockAt"
-                    type="number"
-                    min={0}
-                    name="lowStockAt"
-                    value={form.lowStockAt}
-                    onChange={(event) =>
-                      updateField("lowStockAt", event.target.value)
-                    }
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <aside className="space-y-6">
-            <section className="rounded-2xl border border-slate-200 p-5">
-              <div className="mb-5">
-                <h3 className="text-base font-semibold text-slate-950">
-                  Product image
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Upload an image or paste an image URL.
-                </p>
-              </div>
-
-              <div className="overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50">
-                {form.imageUrl ? (
-                  <img
-                    src={form.imageUrl}
-                    alt={form.name || "Product preview"}
-                    className="h-64 w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-64 items-center justify-center px-6 text-center">
-                    <div>
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
-                        IMG
-                      </div>
-                      <p className="text-sm font-medium text-slate-700">
-                        No image selected
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Preview appears here after upload.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className={labelClass} htmlFor="imageUrl">
-                    Image URL
-                  </label>
-                  <input
-                    id="imageUrl"
-                    name="imageUrl"
-                    value={form.imageUrl}
-                    onChange={(event) =>
-                      updateField("imageUrl", event.target.value)
-                    }
-                    placeholder="https://example.com/image.jpg"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass} htmlFor="upload">
-                    Upload image
-                  </label>
-                  <input
-                    id="upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={onUpload}
-                    disabled={uploading || pending}
-                    className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-white text-sm text-slate-600 file:mr-4 file:border-0 file:bg-slate-900 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white hover:file:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-
-                  {uploading && (
-                    <p className="mt-2 text-xs text-slate-500">
-                      Uploading image...
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <h3 className="text-base font-semibold text-slate-950">
-                Summary
-              </h3>
-
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Status</dt>
-                  <dd className="font-medium text-slate-900">
-                    {form.isActive ? "Active" : "Draft"}
-                  </dd>
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Price</dt>
-                  <dd className="font-medium text-slate-900">
-                    ${Number(form.price || 0).toFixed(2)}
-                  </dd>
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Stock</dt>
-                  <dd className="font-medium text-slate-900">
-                    {Number(form.stock || 0)}
-                  </dd>
-                </div>
-              </dl>
-            </section>
-          </aside>
-        </div>
-
-        {error && (
-          <div className="mx-6 mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
             {mode === "edit" && (
               <button
                 type="button"
                 onClick={() => setConfirmOpen(true)}
                 disabled={pending}
-                className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
               >
-                Archive product
+                Archive Product
               </button>
             )}
           </div>
+        </div>
 
-          <div className="flex items-center gap-3">
+        <div className="space-y-4">
+          <div>
+            <label
+              className="mb-1 block text-sm font-medium text-slate-700"
+              htmlFor="name"
+            >
+              Name
+            </label>
+            <input
+              id="name"
+              name="name"
+              defaultValue={defaults.name}
+              required
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-1 block text-sm font-medium text-slate-700"
+              htmlFor="description"
+            >
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              defaultValue={defaults.description}
+              rows={3}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-1 block text-sm font-medium text-slate-700"
+              htmlFor="categoryId"
+            >
+              Category
+            </label>
+            <select
+              id="categoryId"
+              name="categoryId"
+              defaultValue={defaults.categoryId}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="">Uncategorized</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {mode === "create" && (
+              <div>
+                <label
+                  className="mb-1 block text-sm font-medium text-slate-700"
+                  htmlFor="stock"
+                >
+                  Initial Stock
+                </label>
+                <input
+                  id="stock"
+                  type="number"
+                  min={0}
+                  name="stock"
+                  defaultValue={defaults.stock}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+            {mode === "edit" && (
+              <input type="hidden" name="stock" value={defaults.stock} />
+            )}
+            <div className={mode === "create" ? "" : "col-span-2"}>
+              <label
+                className="mb-1 block text-sm font-medium text-slate-700"
+                htmlFor="lowStockAt"
+              >
+                Low stock threshold
+              </label>
+              <input
+                id="lowStockAt"
+                type="number"
+                min={0}
+                name="lowStockAt"
+                defaultValue={defaults.lowStockAt}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Image
+            </label>
+            {imageUrl ? (
+              <div className="relative w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt="Product"
+                  className="h-40 w-40 rounded-xl object-cover border border-slate-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl(null)}
+                  className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+                  aria-label="Remove image"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                    className="h-3 w-3"
+                  >
+                    <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                  </svg>
+                </button>
+                <label
+                  htmlFor="upload"
+                  className="mt-2 flex cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                    className="h-3.5 w-3.5"
+                  >
+                    <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM4.75 3.5A2.25 2.25 0 0 0 2.5 5.75v5.5A2.25 2.25 0 0 0 4.75 13.5h5.5A2.25 2.25 0 0 0 12.5 11.25V9a.75.75 0 0 0-1.5 0v2.25a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1-.75-.75v-5.5a.75.75 0 0 1 .75-.75H7a.75.75 0 0 0 0-1.5H4.75Z" />
+                  </svg>
+                  Change image
+                  <input
+                    id="upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={onUpload}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
+            ) : (
+              <label
+                htmlFor="upload"
+                onDrop={onDrop}
+                onDragOver={(e) => e.preventDefault()}
+                className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition
+                  ${uploading ? "border-slate-300 bg-slate-50" : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50"}`}
+              >
+                {uploading ? (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      className="h-8 w-8 animate-spin text-slate-400"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                      />
+                    </svg>
+                    <span className="text-sm text-slate-500">Uploading…</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      className="h-8 w-8 text-slate-400"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+                      />
+                    </svg>
+                    <div>
+                      <span className="text-sm font-medium text-slate-700">
+                        Click to upload
+                      </span>
+                      <span className="mx-1 text-sm text-slate-400">
+                        or drag and drop
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-400">PNG, JPG, WEBP</span>
+                  </>
+                )}
+                <input
+                  id="upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={onUpload}
+                  className="sr-only"
+                />
+              </label>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-5">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                name="isActive"
+                defaultChecked={defaults.isActive}
+              />
+              Active product
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                name="preOrder"
+                defaultChecked={defaults.preOrder}
+              />
+              <span>
+                Pre-Order
+                <span className="ml-1.5 rounded-full bg-[#ede5f7] px-2 py-0.5 text-[10px] font-semibold text-[#4a3860]">
+                  shows Pre-Order badge
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Pricing */}
+        <div className="space-y-4 border-t border-slate-200 pt-6">
+          <p className="text-sm font-semibold text-slate-900">Pricing</p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Sell Price ($){" "}
+                <span className="text-slate-400 font-normal">— charged to customer</span>
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Bought Price ($){" "}
+                <span className="text-slate-400 font-normal">— paid to supplier</span>
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={boughtPrice}
+                onChange={(e) => setBoughtPrice(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Delivery ($){" "}
+                <span className="text-slate-400 font-normal">— shipping per unit</span>
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={deliveryPrice}
+                onChange={(e) => setDeliveryPrice(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Discount (%){" "}
+                <span className="text-slate-400 font-normal">— optional</span>
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                value={discountPct}
+                onChange={(e) => setDiscountPct(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
+          {sell > 0 && (
+            <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm space-y-1">
+              <div className="flex justify-between text-slate-600">
+                <span>Final price to customer</span>
+                <span>
+                  {formatPrice(finalPrice)}
+                  {discount > 0 && (
+                    <span className="ml-1 text-xs text-slate-400">
+                      ({discount}% off)
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Cost per unit (bought + delivery)</span>
+                <span>{formatPrice(bought + delivery)}</span>
+              </div>
+              <div
+                className={`flex justify-between border-t border-slate-200 pt-1 font-semibold ${profitPerUnit >= 0 ? "text-emerald-600" : "text-red-600"}`}
+              >
+                <span>Profit per unit</span>
+                <span>{formatPrice(profitPerUnit)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-60"
+          >
+            {submitLabel}
+          </button>
+
+          {mode === "edit" && (
             <button
               type="button"
-              onClick={() => router.push("/admin/products")}
+              onClick={() => setConfirmOpen(true)}
               disabled={pending}
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
             >
-              Cancel
+              Archive Product
             </button>
-
-            <button
-              type="submit"
-              disabled={pending || uploading}
-              className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {pending
-                ? "Saving..."
-                : mode === "create"
-                  ? "Create product"
-                  : "Save changes"}
-            </button>
-          </div>
+          )}
         </div>
       </form>
 

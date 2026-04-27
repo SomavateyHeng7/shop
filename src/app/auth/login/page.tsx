@@ -14,6 +14,7 @@ export default async function LoginPage({
     redirect(session.user.role === "superadmin" ? "/superadmin" : "/admin");
   }
 
+
   const resolved = await searchParams;
   const showError = resolved.error === "CredentialsSignin";
 

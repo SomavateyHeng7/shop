@@ -4,7 +4,10 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { FinanceBudget } from "./finance-budget";
 import { FinanceProducts } from "./finance-products";
+<<<<<<< HEAD
 import { FinanceOrders } from "./finance-orders";
+=======
+>>>>>>> feat/finance
 
 export interface ProductRow {
   id: string;
@@ -44,12 +47,19 @@ export interface OrderRow {
   items: OrderItemRow[];
 }
 
+<<<<<<< HEAD
 type Tab = "budget" | "products" | "orders";
+=======
+type Tab = "budget" | "products";
+>>>>>>> feat/finance
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "budget", label: "Budget & Goals" },
   { key: "products", label: "Product Pricing" },
+<<<<<<< HEAD
   { key: "orders", label: "Orders" },
+=======
+>>>>>>> feat/finance
 ];
 
 function todayMonth() {
@@ -124,9 +134,12 @@ export function FinanceManager({ initialProducts, initialSettings, initialOrders
         />
       )}
       {activeTab === "products" && <FinanceProducts products={initialProducts} />}
+<<<<<<< HEAD
       {activeTab === "orders" && (
         <FinanceOrders orders={initialOrders} products={initialProducts} />
       )}
+=======
+>>>>>>> feat/finance
     </div>
   );
 }

@@ -10,7 +10,12 @@ const loginSchema = z.object({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+<<<<<<< HEAD
   secret: process.env.AUTH_SECRET,
+=======
+  secret: process.env.AUTH_SECRET ?? "mock-frontend-testing-secret",
+  trustHost: true,
+>>>>>>> feat/finance
   session: { strategy: "jwt" },
   trustHost: true,
   pages: {

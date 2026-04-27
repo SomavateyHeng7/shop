@@ -8,6 +8,7 @@ export type ProductCardData = {
   imageUrl: string | null;
   stock: number;
   lowStockAt: number;
+  preOrder?: boolean;
   category: { name: string; slug: string } | null;
 };
 

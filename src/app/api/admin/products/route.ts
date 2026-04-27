@@ -6,11 +6,12 @@ import { slugify } from "@/lib/utils";
 const createSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  price: z.number().positive(),
-  imageUrl: z.string().optional().or(z.literal("")),
-  categoryId: z.string().optional(),
+  price: z.number().min(0).default(0),
+  imageUrl: z.string().nullable().optional(),
+  categoryId: z.string().nullable().optional(),
   stock: z.number().int().min(0).default(0),
   lowStockAt: z.number().int().min(0).default(5),
+  preOrder: z.boolean().default(false),
 });
 
 async function isWritesEnabled() {

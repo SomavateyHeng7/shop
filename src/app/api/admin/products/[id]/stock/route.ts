@@ -2,14 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-const stockSchema = z.object({
-  stock: z.number().int().min(0),
+const schema = z.object({
+  change: z.number().int(),
   note: z.string().optional(),
+  unitCost: z.number().min(0).optional(),
 });
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const s = await prisma.systemSettings.findUnique({ where: { id: "singleton" } });
   if (!(s?.adminWritesEnabled ?? true)) {
@@ -18,11 +19,12 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const parsed = stockSchema.safeParse(body);
+  const parsed = schema.safeParse(body);
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+<<<<<<< HEAD
   const current = await prisma.product.findUnique({ where: { id } });
   if (!current) return Response.json({ error: "Not found" }, { status: 404 });
 
@@ -34,4 +36,20 @@ export async function PATCH(
   ]);
 
   return Response.json({ ...product, price: Number(product.price) });
+=======
+  const { change, note } = parsed.data;
+
+  const current = mockStore.products.findById(id);
+  if (!current) return Response.json({ error: "Not found" }, { status: 404 });
+
+  const newStock = current.stock + change;
+  if (newStock < 0) {
+    return Response.json({ error: "Stock cannot go below 0" }, { status: 400 });
+  }
+
+  const updated = mockStore.products.update(id, { stock: newStock });
+  mockStore.stockLogs.create(id, change, note);
+
+  return Response.json(updated);
+>>>>>>> feat/finance
 }

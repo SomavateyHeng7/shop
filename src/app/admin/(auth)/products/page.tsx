@@ -1,9 +1,13 @@
-import Link from "next/link";
+import { AddProductDialog } from "@/components/admin/add-product-dialog";
 import { ProductTable } from "@/components/admin/product-table";
+<<<<<<< HEAD:src/app/admin/products/page.tsx
 import { ProductFilters } from "@/components/admin/product-filters";
 import { prisma } from "@/lib/prisma";
 import { getStockStatus } from "@/lib/utils";
 import { Suspense } from "react";
+=======
+import { prisma } from "@/lib/prisma";
+>>>>>>> feat/finance:src/app/admin/(auth)/products/page.tsx
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +27,7 @@ export default async function AdminProductsPage({
   const categoryId = resolved.category?.trim() || undefined;
   const status = resolved.status?.trim() || undefined;
 
+<<<<<<< HEAD:src/app/admin/products/page.tsx
   const [rawProducts, categories] = await Promise.all([
     prisma.product.findMany({
       where: {
@@ -53,11 +58,36 @@ export default async function AdminProductsPage({
   } else if (status === "out_of_stock") {
     products = products.filter((p) => getStockStatus(p.stock, p.lowStockAt) === "out_of_stock");
   }
+=======
+  const [products, categories] = await Promise.all([
+    prisma.product.findMany({
+      where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        price: true,
+        imageUrl: true,
+        stock: true,
+        lowStockAt: true,
+        isActive: true,
+        preOrder: true,
+        category: { select: { name: true, slug: true } },
+      },
+      orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
+    }),
+    prisma.category.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+>>>>>>> feat/finance:src/app/admin/(auth)/products/page.tsx
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-semibold text-slate-900">Products</h1>
+<<<<<<< HEAD:src/app/admin/products/page.tsx
         <Link
           href="/admin/products/new"
           className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
@@ -67,6 +97,9 @@ export default async function AdminProductsPage({
           </svg>
           Add Product
         </Link>
+=======
+        <AddProductDialog categories={categories} />
+>>>>>>> feat/finance:src/app/admin/(auth)/products/page.tsx
       </div>
 
       <Suspense>
@@ -78,7 +111,7 @@ export default async function AdminProductsPage({
         />
       </Suspense>
 
-      <ProductTable products={products} />
+      <ProductTable products={products.map((p) => ({ ...p, price: Number(p.price) }))} />
     </div>
   );
 }

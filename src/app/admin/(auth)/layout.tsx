@@ -1,5 +1,5 @@
+import Image from "next/image";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminImpersonationGate } from "@/components/admin/admin-impersonation-gate";
 import { StopImpersonationButton } from "@/components/admin/stop-impersonation-button";
@@ -13,16 +13,13 @@ export const dynamic = "force-dynamic";
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const requestHeaders = await headers();
-  const pathname = requestHeaders.get("x-pathname");
-  const isLoginRoute = pathname === "/admin/login";
-
   const session = await auth();
 
   if (!session) {
     redirect("/auth/login");
   }
 
+<<<<<<< HEAD:src/app/admin/layout.tsx
   if (isLoginRoute) {
     return <>{children}</>;
   }
@@ -30,12 +27,22 @@ export default async function AdminLayout({
   const settings = await getSystemSettings();
   const writesDisabled = settings?.adminWritesEnabled === false;
 
+=======
+>>>>>>> feat/finance:src/app/admin/(auth)/layout.tsx
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/admin" className="text-xl font-semibold text-slate-900">
-            Admin Dashboard
+          <Link href="/admin" className="shrink-0">
+            <Image
+              src="/st-shop.png"
+              alt="ST Shop"
+              width={120}
+              height={40}
+              style={{ height: 40, width: "auto" }}
+              className="object-contain"
+              priority
+            />
           </Link>
           <div className="flex items-center gap-2">
             {session.user.role === "superadmin" && <StopImpersonationButton />}
