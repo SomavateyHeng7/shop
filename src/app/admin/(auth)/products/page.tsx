@@ -1,6 +1,6 @@
-import Link from "next/link";
+import { AddProductDialog } from "@/components/admin/add-product-dialog";
 import { ProductTable } from "@/components/admin/product-table";
-import { mockStore } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -16,18 +16,34 @@ export default async function AdminProductsPage({
   const resolved = await searchParams;
   const search = resolved.search?.trim();
 
-  const products = mockStore.products.findMany({ search, includeInactive: true });
+  const [products, categories] = await Promise.all([
+    prisma.product.findMany({
+      where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        price: true,
+        imageUrl: true,
+        stock: true,
+        lowStockAt: true,
+        isActive: true,
+        preOrder: true,
+        category: { select: { name: true, slug: true } },
+      },
+      orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
+    }),
+    prisma.category.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-semibold text-slate-900">Products</h1>
-        <Link
-          href="/admin/products/new"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
-        >
-          Add Product
-        </Link>
+        <AddProductDialog categories={categories} />
       </div>
 
       <form className="rounded-xl border border-slate-200 bg-white p-4">
@@ -39,7 +55,7 @@ export default async function AdminProductsPage({
         />
       </form>
 
-      <ProductTable products={products} />
+      <ProductTable products={products.map((p) => ({ ...p, price: Number(p.price) }))} />
     </div>
   );
 }

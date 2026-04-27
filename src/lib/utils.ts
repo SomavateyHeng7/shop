@@ -15,8 +15,10 @@ export function slugify(text: string): string {
 
 export function getStockStatus(
   stock: number,
-  lowStockAt: number
-): "in_stock" | "low_stock" | "out_of_stock" {
+  lowStockAt: number,
+  preOrder = false
+): "in_stock" | "low_stock" | "out_of_stock" | "pre_order" {
+  if (preOrder) return "pre_order";
   if (stock === 0) return "out_of_stock";
   if (stock <= lowStockAt) return "low_stock";
   return "in_stock";

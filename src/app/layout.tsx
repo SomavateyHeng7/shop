@@ -15,8 +15,8 @@ const displayFont = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "PIC Product Catalog",
-  description: "Public storefront and admin inventory dashboard for PIC",
+  title: "ST Shop",
+  description: "ST Shop — browse and order products online.",
 };
 
 export default function RootLayout({

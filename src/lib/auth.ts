@@ -21,6 +21,7 @@ const MOCK_USERS = [
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET ?? "mock-frontend-testing-secret",
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/auth/login",
